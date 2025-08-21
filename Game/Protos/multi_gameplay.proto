@@ -1,0 +1,153 @@
+// multiGamePlay.proto
+syntax = "proto3";
+
+package game.multigameplay.v1;
+
+import "common.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+service MultiGamePlayService {
+
+	// Allocation (Dedicated server)
+	//==================================================
+
+	// Dedicated Server Allocation(할당) 요청
+	rpc CreateAllocation(CreateAllocationRequest) returns (CreateAllocationResponse);
+
+	// Dedicated Server Remove(할당 해제) 요청
+	rpc DeleteAllocation(DeleteAllocationRequest) returns (google.protobuf.Empty);
+
+	// Dedicated Server Get Allocations(할당 목록) 읽기
+	rpc GetAllocations(GetAllocationsRequest) returns (GetAllocationsResponse);
+
+	// Dedicated Server Get Allocation(할당 정보) 읽기
+	rpc GetAllocation(GetAllocationRequest) returns (GetAllocationResponse);
+
+
+	// Game status monitoring
+	//==================================================
+
+	// Server status 변경요청
+	rpc UpdateGameplayStatus(UpdateGameplayStatusRequest) returns (google.protobuf.Empty);
+
+	// 구독 (Server-streaming)
+	rpc SubscribeAllocationEvents(SubscribeAllocationEventsRequest) returns (stream AllocationEvent);
+
+	// 재접속/합류(세션 토큰 발급/검증, 현재 상태 스냅샷 반환)
+	rpc ResumeSession(ResumeSessionRequest) returns (ResumeSessionResponse);
+}
+
+message CreateAllocationRequest {
+	string allocation_id = 1;
+	int64 build_configuration_id = 2;
+	string payload = 3;
+	string region_id = 4;
+	bool restart = 5;
+}
+
+message CreateAllocationResponse {
+	AllocationInfo allocation = 1;
+	string href = 2;
+}
+
+message DeleteAllocationRequest {
+	string allocation_id = 1;
+}
+
+message GetAllocationsRequest {
+	string age = 1; // *h (최소 활성시간)
+	int32 limit = 2; // 최대 결과수
+	int32 offset = 3; // Pagination 오프셋
+	repeated string allocation_ids = 4;
+}
+
+message GetAllocationsResponse {
+	repeated AllocationInfo allocations = 1; 
+	PaginationInfo pagination = 2;
+}
+
+message GetAllocationRequest {
+	string allocation_id = 1;
+}
+
+message GetAllocationResponse {
+	AllocationInfo allocation = 1;
+}
+
+message ResumeSessionRequest {
+	int32 lobby_id = 1;
+	int32 client_id = 2;
+	// 최초 합류 시 빈 문자열/미설정 가능. (서버가 발급)
+	string session_token = 3;
+}
+
+message ResumeSessionResponse {
+	bool ok = 1;								// 처리 성공 여부
+	bool resumed = 2;							// true: 기존 세션 복구, false: 신규 발급
+	string session_token = 3;					// 새 토큰 또는 기존 토큰
+	AllocationInfo allocation = 4;				// 있으면 반환 (없으면 null)
+	GameplayStatus status = 5;					// 서버가 아는 현재 게임 상태
+	google.protobuf.Timestamp server_time = 6;
+	string reason = 7;							// 실패 사유 등
+}
+
+message AllocationInfo {
+	string allocation_id = 1;
+	int64 build_configuration_id = 2;
+	string fleet_id = 3;
+	uint64 game_port = 4;
+	string ip_address = 5;
+	int64 machine_id = 6;
+	bool is_ready = 7;
+	string region_id = 8;
+	int64 server_id = 9;
+}
+
+message PaginationInfo {
+	int32 limit = 1;
+	int32 offset = 2;
+}
+
+message UpdateGameplayStatusRequest {
+	string allocation_id = 1;
+	int32 lobby_id = 2;
+	GameplayStatus status = 3;
+}
+
+enum GameplayStatus {
+	GAME_PLAY_STATUS_UNKNOWN = 0;
+	GAME_PLAY_STATUS_STARTING = 1;
+	GAME_PLAY_STATUS_READY = 2;
+	GAME_PLAY_STATUS_IN_GAME = 3;
+	GAME_PLAY_STATUS_ENDING = 4;
+	GAME_PLAY_STATUS_TERMINATED = 5;
+}
+
+message SubscribeAllocationEventsRequest {
+	int32 lobby_id = 1;
+	int32 client_id = 2;
+}
+
+message AllocationEvent {
+	enum EventType {
+		ALLOCATION_CREATED = 0;
+		ALLOCATION_READY = 1;
+		ALLOCATION_DELETED = 2;
+		ALLOCATION_FAILED = 3;
+		ALLOCATION_STATUS_CHANGED = 4;
+	}
+	EventType type = 1;
+	string allocation_id = 2;
+	int32 lobby_id = 3;
+	google.protobuf.Timestamp timestamp = 4;
+	
+	// Created, Ready
+	AllocationInfo allocation = 5;
+
+	// Status changed
+	GameplayStatus new_status = 6;
+
+	// Failed
+	string error_message = 7;
+}

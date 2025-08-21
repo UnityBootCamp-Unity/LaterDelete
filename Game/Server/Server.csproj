@@ -1,0 +1,26 @@
+﻿<!-- Server.csproj -->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.31.1" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.71.0" />
+	  <!--  서버가 자신이 가지고있는 gRPC service/methods/messages/ 를 런타임중 클라이언트에게 알려주는 기능 (개발중 디버깅용)-->
+    <PackageReference Include="Grpc.AspNetCore.Server.Reflection" Version="2.71.0" /> 
+    <PackageReference Include="Grpc.Tools" Version="2.71.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+	<ItemGroup>
+		<Protobuf Include="../Protos/*.proto" GrpcServices="Both"></Protobuf>
+	</ItemGroup>
+</Project>

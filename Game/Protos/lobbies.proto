@@ -1,0 +1,112 @@
+// lobbies.proto
+syntax = "proto3";
+
+package game.lobbies;
+
+import "common.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+service LobbiesService {
+	// 로비 생성
+	rpc CreateLobby	(CreateLobbyRequest) returns (CreateLobbyResponse);
+	// 로비 참가
+	rpc JoinLobby	(JoinLobbyRequest) returns (JoinLobbyResponse);
+	// 로비 나가기
+	rpc LeaveLobby	(LeaveLobbyRequest) returns (LeaveLobbyResponse);
+	// 로비 목록 읽기
+	rpc GetLobbyList(google.protobuf.Empty) returns (GetLobbyListResponse);
+	// 로비 구독 (Server-스트리밍. 클라이언트가 서버의 응답을 계속해서 읽을수있는 스트림이 필요하다)
+	rpc SubscribeLobby(SubscribeLobbyRequest) returns (stream LobbyEvent);
+	// 로비 프로퍼티 설정
+	rpc SetLobbyCustomProperties(SetLobbyCustomPropertiesRequest) returns (SetLobbyCustomPropertiesResponse);
+	// 유저 in 로비 프로퍼티 설정
+	rpc SetUserInCustomLobbyProperties(SetUserInLobbyCustomPropertiesRequest) returns (SetUserInLobbyCustomPropertiesResponse);
+}
+
+message CreateLobbyRequest {
+	int32 host_client_id = 1; // 방장
+	int32 max_client = 2; // 인원 제한
+}
+
+message CreateLobbyResponse {
+	bool success = 1;
+	LobbyInfo lobby_info = 2;
+	repeated UserInLobbyInfo user_in_lobby_infos = 3;
+}
+
+message JoinLobbyRequest {
+	int32 lobby_id = 1;
+	int32 client_id = 2;
+}
+
+message JoinLobbyResponse {
+	bool success = 1;
+	LobbyInfo lobby_info = 2;
+	repeated UserInLobbyInfo user_in_lobby_infos = 3;
+}
+
+message LeaveLobbyRequest {
+	int32 lobby_id = 1;
+	int32 client_id = 2;
+}
+
+message LeaveLobbyResponse {
+	bool success = 1;
+}
+
+message GetLobbyListResponse {
+	repeated LobbyInfo lobby_infos = 1;
+}
+
+message SubscribeLobbyRequest {
+	int32 lobby_id = 1;
+	int32 client_id = 2;
+}
+
+message SetLobbyCustomPropertiesRequest {
+	int32 lobby_id = 1;
+	map<string, string> kv = 2;
+}
+
+message SetLobbyCustomPropertiesResponse {
+	bool success = 1;
+}
+
+message SetUserInLobbyCustomPropertiesRequest {
+	int32 lobby_id = 1;
+	int32 client_id = 2;
+	map<string, string> kv = 3;
+}
+
+message SetUserInLobbyCustomPropertiesResponse {
+	bool success = 1;
+}
+
+message LobbyEvent {
+	enum EventType {
+		MEMBER_JOIN = 0; // 다른 클라이언트가 로비에 합류
+		MEMBER_LEFT = 1; // 다른 클라이언트가 로비에서 나감
+		LOBBY_PROP_CHANGED = 2; // 로비의 커스텀프로퍼티 변경됨
+		USER_PROP_CHANGED = 3; // 로비내 유저의 커스텀 프로퍼티 변경됨
+	}
+
+	EventType type = 1;
+	int32 lobby_id = 2;
+	int32 client_id = 3;
+	map<string, string> kv = 4;
+	google.protobuf.Timestamp ts = 5;
+}
+
+message LobbyInfo {
+	int32 lobby_id = 1;
+	int32 host_client_id = 2;
+	int32 max_client = 3;
+	int32 num_client = 4;
+	map<string, string> custom_properties = 5;
+}
+
+message UserInLobbyInfo {
+	int32 client_id = 1;
+	map<string, string> custom_properties = 2;
+}

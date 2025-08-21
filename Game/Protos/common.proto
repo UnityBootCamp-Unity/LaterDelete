@@ -1,0 +1,16 @@
+syntax = "proto3";
+package game;
+import "google/protobuf/duration.proto";  
+import "google/protobuf/timestamp.proto";
+
+message Result {
+	bool success = 1;
+	string message = 2;
+	int32 code = 3;
+}
+
+message ClientInfo {
+	int32 client_id = 1;
+	string sessions_id = 2;
+	google.protobuf.Timestamp connected_at = 3;
+}

@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package game.auth;
+
+import "common.proto";
+import "google/protobuf/empty.proto";
+
+service AuthService {
+	// ¥‹πÊ«‚ rpc
+	rpc Login(LoginRequest) returns (LoginResponse); 
+	rpc Logout(LogoutRequest) returns (google.protobuf.Empty);
+	rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+}
+
+message LoginRequest {
+	string username = 1; // id
+	string password = 2; // pw
+}
+
+message LoginResponse {
+	game.Result result = 1;
+	string jwt = 2;
+	game.ClientInfo client_info = 3;
+}
+
+message LogoutRequest {
+	string session_id = 1;
+}
+
+message ValidateTokenRequest {
+	string jwt = 1;
+}
+
+message ValidateTokenResponse {
+	bool is_valid = 1;
+	game.ClientInfo client_info = 2;
+}

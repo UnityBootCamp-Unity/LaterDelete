@@ -1,0 +1,28 @@
+﻿####################################################################################
+# PacketId	Name	                Fields
+####################################################################################
+
+# Connection 0x000n
+ 
+0x0001      S_ConnectionSuccess     int AssignedClientId, string Message
+0x0002      S_ConnectionFailure     string Reason
+
+# Ping 0x000n
+0x0005		C_Ping					long ClientTicks
+0x0006		S_Pong					long EchoTicks
+
+# Authentication 0x001n
+ 
+0x0011      C_Login                 string Id, string Pw
+0x0012      S_LoginResult           bool Success, int AssignedClientId, string Message
+
+# Chat 0x10nn 
+
+0x1010      S_ChatSend              int SenderId, string Text
+0x1020      C_ChatSend              string Text
+
+# Rpc 0x20nn
+0x2000		ClientRpcRequest			uint RpcId, string JsonData
+0x2001		ClientRpcReponse			uint RpcId, string JsonData
+0x2010		ServerRpcRequest			uint RpcId, string JsonData
+0x2011		ServerRpcReponse			uint RpcId, string JsonData

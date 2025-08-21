@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package game.chat;
+
+import "common.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+service ChatService{
+	// 양방향 스트리밍 rpc (실시간 채팅)
+	rpc Chat(stream ChatMessage) returns (stream ChatMessage);
+	rpc GetChatHistory(GetChatHistoryRequest) returns (GetChatHistoryResponse);
+}
+
+message ChatMessage{
+	int32 sender_id = 1;
+	int32 receiver_id = 2;
+	string content = 3;
+	google.protobuf.Timestamp timestamp = 4;
+
+	enum MessageType {
+		NORMAL = 0;
+		SYSTEM = 1;
+		WHISPER = 2;
+	}
+}
+
+message GetChatHistoryRequest {
+	int32 limit = 1;
+	google.protobuf.Timestamp since = 2;
+}
+
+message GetChatHistoryResponse{
+	repeated ChatMessage messages = 1; // repeated : 0~ N 개의 해당 형식 필드를 포함할수있음
+}

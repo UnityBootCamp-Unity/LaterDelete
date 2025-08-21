@@ -1,0 +1,16 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ac069bd68793494f88905e9d29ba275, type: 3}
+  m_Name: MultiplaySettings_Alpha
+  m_EditorClassIdentifier: 
+  buildConfigurationId: 1303249
+  regionId: 8e2986cd-debc-4d2a-ac05-f54955912298
