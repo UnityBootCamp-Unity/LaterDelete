@@ -10,10 +10,10 @@ public class UserController : MonoBehaviour
 
     async void Start()
     {
-        await InitailizeAsync();
+        await InitializeAsync();
     }
 
-    async Task InitailizeAsync()
+    async Task InitializeAsync()
     {
         _userClient = new UserService.UserServiceClient(GrpcConnection.channel);
     }

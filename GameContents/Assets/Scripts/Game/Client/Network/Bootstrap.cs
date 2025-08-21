@@ -7,7 +7,7 @@ namespace Game.Client.Network
 {
     public static class Bootstrap
     {
-        //[RuntimeInitializeOnLoadMethod]
+        [RuntimeInitializeOnLoadMethod]
         public static void Init()
         {
             MultiplayerRoleFlags roleflags = MultiplayerRolesManager.ActiveMultiplayerRoleMask;

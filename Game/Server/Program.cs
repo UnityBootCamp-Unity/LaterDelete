@@ -23,7 +23,10 @@ namespace Game.Server
             // Kestrel 웹 서버 구성. Http2 전용 포트 설정
             builder.WebHost.ConfigureKestrel(option =>
             {
-                option.ListenAnyIP(7777, listenOption => listenOption.Protocols = HttpProtocols.Http2);
+                option.ListenAnyIP(7777, listenOption => {
+                    listenOption.Protocols = HttpProtocols.Http2;
+                    listenOption.UseHttps(); // HTTPS 설정, 개발용 자체 서명 인증서 사용
+                });
             });
 
             // gRPC 서비스 등록 및 설정
@@ -49,7 +52,7 @@ namespace Game.Server
             app.MapGrpcService<MultiGameplayServiceImpl>();
             app.MapGrpcReflectionService();
             app.MapGet("/", () => "gRPC server running on port 7777 (HTTP/2)");
-            Console.WriteLine("gRPC server listening on http://0.0.0.0:7777 (HTTP/2)");
+            Console.WriteLine("gRPC server listening on https://0.0.0.0:7777 (HTTP/2)");
             await app.RunAsync();
 
 

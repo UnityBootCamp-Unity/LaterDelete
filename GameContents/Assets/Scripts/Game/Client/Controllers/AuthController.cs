@@ -15,10 +15,10 @@ namespace Game.Client.Controllers
 
         async void Start()
         {
-            await InitailizeAsync();
+            await InitializeAsync();
         }
 
-        async Task InitailizeAsync()
+        async Task InitializeAsync()
         {
             _authClient = new AuthService.AuthServiceClient(GrpcConnection.channel);
         }

@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c71dcf5c52109f9439c485e4999b5a98, type: 3}
   m_Name: GrpcConnectionSettings
   m_EditorClassIdentifier: 
-  <serverIp>k__BackingField: 127.0.0.1
+  <serverIp>k__BackingField: 13.239.84.98
   <serverPort>k__BackingField: 7777

@@ -1,12 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 namespace Game.Persistence
 {
     public static class DBConnectionSettings
     {
         public const string CONNECTION =
-            "server=127.0.0.1;" +
-            "port=3309;" +
+            "server=13.239.84.98;" + // EC2의 퍼블릭 IP
+            "port=3306;" +           // Docker에서 매핑한 포트
             "user=game;" +
             "password=1234;" +
             "database=multiplaygame;";
