@@ -23,9 +23,11 @@ namespace Game.Server
             // Kestrel 웹 서버 구성. Http2 전용 포트 설정
             builder.WebHost.ConfigureKestrel(option =>
             {
-                option.ListenAnyIP(7777, listenOption => {
-                    listenOption.Protocols = HttpProtocols.Http2;
-                    listenOption.UseHttps(); // HTTPS 설정, 개발용 자체 서명 인증서 사용
+                option.ListenAnyIP(7777, lo =>
+                {
+                    lo.UseHttps("/opt/grpc/publish-grpc/certificate.pfx", "1234");
+                    lo.Protocols = HttpProtocols.Http2;   // h2만 허용
+                    lo.UseConnectionLogging(); // HTTPS 이후에 호출 → 복호화된 HTTP/2 프레임 로그 출력
                 });
             });
 

@@ -1,52 +1,83 @@
 ﻿using System.Net;
+using System.Net.Http;
 using System.Net.Http.Json;
+using System.Diagnostics;
 
-namespace Game.Server.User
+static class UserFacade
 {
-    static class UserFacade
+    private static readonly HttpClient _http = CreateDevHttpClient();
+
+    private static HttpClient CreateDevHttpClient()
     {
-        private static readonly HttpClient _http = new HttpClient();
-
-        // DTO
-        public record CreateUserRequest(string username, string password);
-
-        /// <summary>
-        /// 유저 생성 응답
-        /// Server 는 DB 랑 직접 연동된것이 아니지만, DB에서 필수로 사용하는게 아니라고 명시하려고 ? nullable 을 붙여놨음. 안써도됨
-        /// </summary>
-        public record CreateUserResponse(Guid id, string username, string? nickname, DateTime createdAt, DateTime? lastConnected);
-        public record UpdateNicknameRequest(string nickname);
-        public record UpdateNicknameResponse(string newNickname, bool exists, string message);
-
-
-        public static async Task<(HttpStatusCode statusCode, CreateUserResponse user)> RegisterAsync(string baseUrl, 
-                                                                                                     string username,
-                                                                                                     string password, 
-                                                                                                     CancellationToken cancellationToken = default)
+        var handler = new HttpClientHandler
         {
-            var response = await _http.PostAsJsonAsync($"{baseUrl}/users/create",
-                                                       new CreateUserRequest(username, password),
-                                                       cancellationToken);
+            // 개발용: 자체서명/이름불일치 무시
+            ServerCertificateCustomValidationCallback =
+                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+        };
 
-            response.EnsureSuccessStatusCode();
-
-            var body = await response.Content.ReadFromJsonAsync<CreateUserResponse>(cancellationToken);
-            return (response.StatusCode, body);
-        }
-
-        public static async Task<(HttpStatusCode statusCode, UpdateNicknameResponse response)> UpdateNicknameAsync(string baseUrl,
-                                                                                                                   string id,
-                                                                                                                   string newNickname,
-                                                                                                                   CancellationToken cancellationToken = default)
+        return new HttpClient(handler)
         {
-            var response = await _http.PostAsJsonAsync($"{baseUrl}/users/{id}/nickname",
-                                                       new UpdateNicknameRequest(newNickname),
-                                                       cancellationToken);
+            // ★ persistence는 HTTP/2 핸드셰이크가 불안 → 1.1로 고정
+            DefaultRequestVersion = HttpVersion.Version11,
+            DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact,
+            Timeout = TimeSpan.FromSeconds(15)
+        };
+    }
 
-            response.EnsureSuccessStatusCode();
+    // DTO
+    public record CreateUserRequest(string username, string password);
+    public record CreateUserResponse(Guid id, string username, string? nickname, DateTime createdAt, DateTime? lastConnected);
+    public record UpdateNicknameRequest(string nickname);
+    public record UpdateNicknameResponse(string newNickname, bool exists, string message);
 
-            var body = await response.Content.ReadFromJsonAsync<UpdateNicknameResponse>(cancellationToken);
-            return (response.StatusCode, body);
-        }
+    public static async Task<(HttpStatusCode statusCode, CreateUserResponse user)> RegisterAsync(
+        string baseUrl, string username, string password, CancellationToken cancellationToken = default)
+    {
+        var endpoint = $"{baseUrl.TrimEnd('/')}/users/create";
+        Debug.WriteLine($"[UserFacade] POST {endpoint} username={username}");
+
+        var req = new HttpRequestMessage(HttpMethod.Post, endpoint)
+        {
+            Version = HttpVersion.Version11,                       // 안전빵
+            VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+            Content = JsonContent.Create(new CreateUserRequest(username, password))
+        };
+
+        var res = await _http.SendAsync(req, cancellationToken);
+        var text = await res.Content.ReadAsStringAsync(cancellationToken);
+
+        if (!res.IsSuccessStatusCode)
+            throw new HttpRequestException($"Persistence returned {(int)res.StatusCode} {res.StatusCode}. Body: {text}");
+
+        var body = await res.Content.ReadFromJsonAsync<CreateUserResponse>(cancellationToken)
+                   ?? throw new InvalidOperationException($"Empty JSON. Raw: {text}");
+
+        return (res.StatusCode, body);
+    }
+
+    public static async Task<(HttpStatusCode statusCode, UpdateNicknameResponse response)> UpdateNicknameAsync(
+        string baseUrl, string id, string newNickname, CancellationToken cancellationToken = default)
+    {
+        var endpoint = $"{baseUrl.TrimEnd('/')}/users/{id}/nickname";
+        Debug.WriteLine($"[UserFacade] POST {endpoint} id={id} newNickname={newNickname}");
+
+        var req = new HttpRequestMessage(HttpMethod.Post, endpoint)
+        {
+            Version = HttpVersion.Version11,
+            VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+            Content = JsonContent.Create(new UpdateNicknameRequest(newNickname))
+        };
+
+        var res = await _http.SendAsync(req, cancellationToken);
+        var text = await res.Content.ReadAsStringAsync(cancellationToken);
+
+        if (!res.IsSuccessStatusCode)
+            throw new HttpRequestException($"Persistence returned {(int)res.StatusCode} {res.StatusCode}. Body: {text}");
+
+        var body = await res.Content.ReadFromJsonAsync<UpdateNicknameResponse>(cancellationToken)
+                   ?? throw new InvalidOperationException($"Empty JSON. Raw: {text}");
+
+        return (res.StatusCode, body);
     }
 }

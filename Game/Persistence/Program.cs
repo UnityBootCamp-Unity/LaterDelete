@@ -11,7 +11,7 @@ namespace Game.Persistence
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            builder.WebHost.UseUrls("http://0.0.0.0:7272"); // 모든 IP에서 접근 가능하도록 설정
+            builder.WebHost.UseUrls("https://0.0.0.0:7272"); // 모든 IP에서 접근 가능하도록 설정
 
             // Add services to the container.
             builder.Services.AddSingleton<IUserSessionRepository, InMemoryUserSessionRepository>();

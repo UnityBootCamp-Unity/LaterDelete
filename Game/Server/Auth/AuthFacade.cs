@@ -5,8 +5,25 @@ namespace Game.Server.Auth
 {
     public static class AuthFacade
     {
-        private static readonly HttpClient _http = new HttpClient();
-        
+        private static readonly HttpClient _http = CreateDevHttpClient();
+
+        private static HttpClient CreateDevHttpClient()
+        {
+            var handler = new HttpClientHandler
+            {
+                // 개발용: 자체서명/이름불일치 무시
+                ServerCertificateCustomValidationCallback =
+                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            };
+            return new HttpClient(handler)
+            {
+                // ★ persistence는 HTTP/2 핸드셰이크가 불안 → 1.1로 고정
+                DefaultRequestVersion = HttpVersion.Version11,
+                DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact,
+                Timeout = TimeSpan.FromSeconds(15)
+            };
+        }
+
         // record 한정자
         // 데이터 캡슐 내장 기능을 제공하는 참조형식 정의를 위한 키워드
         public record LoginRequest(string id, string pw);

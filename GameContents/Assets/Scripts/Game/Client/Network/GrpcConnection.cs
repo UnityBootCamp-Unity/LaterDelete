@@ -1,7 +1,9 @@
 ﻿using Cysharp.Net.Http;
+using Game.User;
 using Grpc.Core;
 using Grpc.Net.Client;
 using System;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Game.Client.Network
@@ -50,6 +52,25 @@ namespace Game.Client.Network
             });
 
             isInitialized = true;
+        }
+
+        public static async Task TestRegisterAsync()
+        {
+            Debug.Log($"[gRPC] URL: {s_channel.Target}");
+            try
+            {
+                var client = new UserService.UserServiceClient(s_channel);
+                var resp = await client.RegisterAsync(new RegisterRequest
+                {
+                    // 여기다가 서버가 요구하는 최소 파라미터 넣어줘
+                    // 예: Username = "testuser", Password = "1234"
+                });
+                Debug.Log($"[gRPC] Register OK -> {resp}");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[gRPC] Register FAILED\n{ex}");
+            }
         }
 
         public static Metadata JwtHeader()
