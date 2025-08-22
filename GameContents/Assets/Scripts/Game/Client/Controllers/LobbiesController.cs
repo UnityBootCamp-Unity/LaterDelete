@@ -348,13 +348,16 @@ namespace Game.Client.Controllers
 
             await SetUserCustomPropertiesAsync(prevMasterClientId, new Dictionary<string, string>
             {
-                { IS_MASTER, bool.FalseString }
+                { IS_MASTER, bool.FalseString },
+                { IS_READY, bool.FalseString }, // 마스터가 바뀌면 준비 상태도 초기화
+                { USER_ID, GrpcConnection.clientInfo.UserId }
             });
 
             await SetUserCustomPropertiesAsync(nextMasterClientId, new Dictionary<string, string>
             {
                 { IS_MASTER, bool.TrueString },
-                { IS_READY, bool.TrueString }
+                { IS_READY, bool.TrueString },
+                { USER_ID, GrpcConnection.clientInfo.UserId }
             });
         }
 

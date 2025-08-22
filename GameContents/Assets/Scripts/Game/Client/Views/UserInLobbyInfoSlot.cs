@@ -24,10 +24,14 @@ namespace Game.Client.Views
             if (info.CustomProperties.TryGetValue(USER_ID, out string userId))
             {
                 _nickname.text = userId; // 실제 UserId 표시
+                // 정상적으로 UserId가 설정되었을 때의 로그
+                Debug.Log($"UserInLobbyInfoSlot - ClientId: {clientId}, UserId: {userId}");
             }
             else
             {
                 _nickname.text = "Loading..."; // 아직 UserId가 동기화되지 않음
+                // USER_ID가 없어서 "Loading..."이 표시되는 경우의 경고 로그
+                Debug.LogWarning($"USER_ID missing for ClientId: {clientId}");
             }
 
             // Is ready ?

@@ -76,14 +76,14 @@ namespace Game.Client.Views
             _lobbyListCreateLobby.onClick.AddListener(_createLobby.Show);
             _createLobbyCancel.onClick.AddListener(_createLobby.Hide);
             _createLobbyConfirm.onClick.AddListener(OnCreateLobbyConfirmButtonClicked);
-            _inLobbyReady.onClick.AddListener(OnInLobbyReadyButtonClicked);
-            _inLobbyReadyCancel.onClick.AddListener(OnInLobbyReadyCancelButtonClicked);
-            _inLobbyLeave.onClick.AddListener(OnInLobbyLeaveButtonClicked);
-            _inLobbyPlay.onClick.AddListener(OnInLobbyPlayButtonClicked);
-            _controller.onMemberJoin += OnMemberJoin;
-            _controller.onMemberLeft += OnMemberLeft;
-            _controller.onLobbyPropsChanged += OnLobbyPropsChanged;
-            _controller.onUserPropsChanged += OnUserPropsChanged;
+            //_inLobbyReady.onClick.AddListener(OnInLobbyReadyButtonClicked);
+            //_inLobbyReadyCancel.onClick.AddListener(OnInLobbyReadyCancelButtonClicked);
+            //_inLobbyLeave.onClick.AddListener(OnInLobbyLeaveButtonClicked);
+            //_inLobbyPlay.onClick.AddListener(OnInLobbyPlayButtonClicked);
+            //_controller.onMemberJoin += OnMemberJoin;
+            //_controller.onMemberLeft += OnMemberLeft;
+            //_controller.onLobbyPropsChanged += OnLobbyPropsChanged;
+            //_controller.onUserPropsChanged += OnUserPropsChanged;
 
         }
 
@@ -94,14 +94,14 @@ namespace Game.Client.Views
             _lobbyListCreateLobby.onClick.RemoveListener(_createLobby.Show);
             _createLobbyCancel.onClick.RemoveListener(_createLobby.Hide);
             _createLobbyConfirm.onClick.RemoveListener(OnCreateLobbyConfirmButtonClicked);
-            _inLobbyReady.onClick.RemoveListener(OnInLobbyReadyButtonClicked);
-            _inLobbyReadyCancel.onClick.RemoveListener(OnInLobbyReadyCancelButtonClicked);
-            _inLobbyLeave.onClick.RemoveListener(OnInLobbyLeaveButtonClicked);
-            _inLobbyPlay.onClick.RemoveListener(OnInLobbyPlayButtonClicked);
-            _controller.onMemberJoin -= OnMemberJoin;
-            _controller.onMemberLeft -= OnMemberLeft;
-            _controller.onLobbyPropsChanged -= OnLobbyPropsChanged;
-            _controller.onUserPropsChanged -= OnUserPropsChanged;
+            //_inLobbyReady.onClick.RemoveListener(OnInLobbyReadyButtonClicked);
+            //_inLobbyReadyCancel.onClick.RemoveListener(OnInLobbyReadyCancelButtonClicked);
+            //_inLobbyLeave.onClick.RemoveListener(OnInLobbyLeaveButtonClicked);
+            //_inLobbyPlay.onClick.RemoveListener(OnInLobbyPlayButtonClicked);
+            //_controller.onMemberJoin -= OnMemberJoin;
+            //_controller.onMemberLeft -= OnMemberLeft;
+            //_controller.onLobbyPropsChanged -= OnLobbyPropsChanged;
+            //_controller.onUserPropsChanged -= OnUserPropsChanged;
         }
 
         #region Canvas - LobbyList
@@ -170,7 +170,7 @@ namespace Game.Client.Views
                 return;
             }
 
-            _loading.Show();
+            // _loading.Show(); 일단 중지
 
             var (success, message, userInfos) = await _controller.JoinLobbyAsync(_selectedLobbyId);
 
@@ -185,7 +185,10 @@ namespace Game.Client.Views
                     { USER_ID, GrpcConnection.clientInfo.UserId } // UserId 저장
                 });
 
-                _lobbyList.Hide(); // TODO : Canvas 만 숨길게 아니라, View 컴포넌트 비활성화도 해야함. (View 추상화 필요)
+                //_lobbyList.Hide(); // TODO : Canvas 만 숨길게 아니라, View 컴포넌트 비활성화도 해야함. (View 추상화 필요) // 필요 없음
+                // *** 변경: 캔버스 전환 대신 3D 씬으로 이동 ***
+                GameManager.instance.ChangeState(State.InWaitingRoom);
+                return;
             }
             else
             {
@@ -209,14 +212,14 @@ namespace Game.Client.Views
         /// </summary>
         private async void OnCreateLobbyConfirmButtonClicked()
         {
-            _loading.Show();
+            // _loading.Show(); 일단 중지
 
             int maxClient = int.Parse(_createLobbyMaxClient.text);
             var (success, message, userInfos) = await _controller.CreateLobbyAsync(maxClient);
 
             if (success)
             {
-                RefreshUserInLobbyContent(userInfos);
+                //RefreshUserInLobbyContent(userInfos); 씬 이동 시 필요 없음
 
                 await _controller.SetLobbyCustomPropertiesAsync(new Dictionary<string, string>
                 {
@@ -231,8 +234,11 @@ namespace Game.Client.Views
                     { USER_ID, GrpcConnection.clientInfo.UserId } // UserId 저장
                 });
 
-                _createLobby.Hide();
-                _lobbyList.Hide();
+                //_createLobby.Hide();
+                //_lobbyList.Hide(); 씬 이동 시 필요 없음
+                // *** 변경: 캔버스 전환 대신 3D 씬으로 이동 ***
+                SceneManager.LoadScene("WaitingRoom");
+                return;
             }
 
             _loading.Hide();
@@ -278,11 +284,27 @@ namespace Game.Client.Views
 
             _inLobbyReady.interactable = false; // Ready 진행중에는 버튼 또 누를수 없게 
 
-            // 서버에 Ready 요청
+            // 기존 CustomProperties를 가져와서 병합 (덮어쓰기 방지)
+            var existingProps = new Dictionary<string, string>();
+            if (_controller.userCustomProperties.TryGetValue(GrpcConnection.clientInfo.ClientId, out var currentProps))
+            {
+                // 기존 Properties 복사
+                foreach (var prop in currentProps)
+                {
+                    existingProps[prop.Key] = prop.Value;
+                }
+            }
+
+            // IsReady만 업데이트 (기존 데이터 유지)
+            existingProps[IS_READY] = bool.TrueString;
+
+            var response = await _controller.SetUserCustomPropertiesAsync(GrpcConnection.clientInfo.ClientId, existingProps);
+
+            /*// 서버에 Ready 요청
             var response = await _controller.SetUserCustomPropertiesAsync(GrpcConnection.clientInfo.ClientId, new Dictionary<string, string>
             {
                 { IS_READY, bool.TrueString}
-            });
+            });*/
 
             // Ready 성공하면
             if (response.success)
@@ -309,11 +331,28 @@ namespace Game.Client.Views
 
             _inLobbyReadyCancel.interactable = false; // ReadyCancel 진행중에는 버튼 또 누를수 없게 
 
-            // 서버에 Ready cancel 요청
+            // 기존 CustomProperties를 가져와서 병합 (덮어쓰기 방지)
+            var existingProps = new Dictionary<string, string>();
+            if (_controller.userCustomProperties.TryGetValue(GrpcConnection.clientInfo.ClientId, out var currentProps))
+            {
+                // 기존 Properties 복사
+                foreach (var prop in currentProps)
+                {
+                    existingProps[prop.Key] = prop.Value;
+                }
+            }
+
+            // IsReady만 업데이트 (기존 데이터 유지)
+            existingProps[IS_READY] = bool.FalseString;
+
+            var response = await _controller.SetUserCustomPropertiesAsync(GrpcConnection.clientInfo.ClientId, existingProps);
+
+
+            /*// 서버에 Ready cancel 요청
             var response = await _controller.SetUserCustomPropertiesAsync(GrpcConnection.clientInfo.ClientId, new Dictionary<string, string>
             {
                 { IS_READY, bool.FalseString }
-            });
+            });*/
 
             // Ready cancel 성공하면
             if (response.success)
@@ -341,11 +380,14 @@ namespace Game.Client.Views
             
             if (success)
             {
-                _inLobby.Hide();
-                _lobbyList.Show();
-                _alert.Hide();
+                //_inLobby.Hide();
+                //_lobbyList.Show();
+                //_alert.Hide();
 
-                RefreshLobbyList();
+                //RefreshLobbyList(); 필요 없음
+                // *** 변경: 캔버스 전환 대신 로비 리스트 씬으로 이동 ***
+                StartCoroutine(SceneTransitionUtility.C_LoadAndSwitchAsync("Lobbies"));
+                return;
             }
             else
             {
@@ -416,6 +458,9 @@ namespace Game.Client.Views
             int slotIndex = _userInLobbySlots.FindIndex(slot => slot.clientId == clientId);
             Destroy(_userInLobbySlots[slotIndex].gameObject);
             _userInLobbySlots.RemoveAt(slotIndex);
+
+            // 멤버가 나간 후 남은 멤버들의 CustomProperties가 손실될 수 있으므로 재확인 및 복구
+            await RefreshRemainingMembersAsync();
         }
 
         private async void OnUserPropsChanged(int clientId, IDictionary<string, string> props)
@@ -423,10 +468,50 @@ namespace Game.Client.Views
             await Awaitable.MainThreadAsync();
 
             Debug.Log("OnUserPropsChanged");
+
+            // 함수 시작 부분에 추가 - 디버깅을 위한 로그
+            Debug.Log($"OnUserPropsChanged - ClientId: {clientId}, Props: {string.Join(", ", props.Select(kv => $"{kv.Key}={kv.Value}"))}");
+
             int slotIndex = _userInLobbySlots.FindIndex(slot => slot.clientId == clientId);
 
             if (slotIndex < 0)
                 return;
+
+            // *** 여기에 추가 ***
+            // 방장 변경 시 UserId가 없으면 자동으로 재설정
+            if (clientId == GrpcConnection.clientInfo.ClientId &&
+                props.ContainsKey(IS_MASTER) &&
+                props[IS_MASTER] == bool.TrueString &&
+                !props.ContainsKey(USER_ID))
+            {
+                Debug.LogWarning("Became master but USER_ID missing. Restoring USER_ID...");
+
+                // 기존 Properties와 새로운 Properties 병합
+                var mergedProps = new Dictionary<string, string>();
+                if (_controller.userCustomProperties.TryGetValue(clientId, out var existingProps))
+                {
+                    foreach (var prop in existingProps)
+                    {
+                        mergedProps[prop.Key] = prop.Value;
+                    }
+                }
+
+                // 새로운 Properties 추가
+                foreach (var prop in props)
+                {
+                    mergedProps[prop.Key] = prop.Value;
+                }
+
+                // USER_ID가 없으면 추가
+                if (!mergedProps.ContainsKey(USER_ID))
+                {
+                    mergedProps[USER_ID] = GrpcConnection.clientInfo.UserId;
+                }
+
+                // 서버에 전체 Properties 재설정
+                await _controller.SetUserCustomPropertiesAsync(clientId, mergedProps);
+                return; // 재설정 후 다시 이벤트가 올 것이므로 여기서 종료
+            }
 
             _userInLobbySlots[slotIndex].Refresh(new UserInLobbyInfo
             {
@@ -438,6 +523,7 @@ namespace Game.Client.Views
             {
                 // UserId 가 동기화되었으면 이제 슬롯 활성화
                 _userInLobbySlots[slotIndex].gameObject.SetActive(true);
+                Debug.Log($"Slot activated for clientId: {clientId}"); // 슬롯이 정상적으로 활성화되었는지 확인
             }
 
             if (clientId == GrpcConnection.clientInfo.ClientId)
@@ -543,6 +629,29 @@ namespace Game.Client.Views
                 isAllReady = false;
 
             _inLobbyPlay.interactable = isAllReady;
+        }
+
+        /// <summary>
+        /// 멤버가 나간 후 남은 멤버들의 CustomProperties를 재확인하고 복구
+        /// 서버에서 멤버 제거 시 다른 멤버들의 데이터가 초기화될 수 있는 문제 해결
+        /// </summary>
+        private async Task RefreshRemainingMembersAsync()
+        {
+            await Task.Delay(500);
+
+            foreach (var slot in _userInLobbySlots)
+            {
+                if (_controller.userCustomProperties.TryGetValue(slot.clientId, out var props))
+                {
+                    if (!props.ContainsKey(USER_ID) && slot.clientId == GrpcConnection.clientInfo.ClientId)
+                    {
+                        await _controller.SetUserCustomPropertiesAsync(slot.clientId, new Dictionary<string, string>
+                {
+                    { USER_ID, GrpcConnection.clientInfo.UserId }
+                });
+                    }
+                }
+            }
         }
 
     }

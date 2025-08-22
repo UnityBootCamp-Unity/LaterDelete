@@ -36,6 +36,8 @@ MonoBehaviour:
     m_path: Assets/Scenes/InGame/Server.unity
   - m_enabled: 1
     m_path: Assets/Scenes/Test_InGameNetwork.unity
+  - m_enabled: 1
+    m_path: Assets/Scenes/XR Templete/WaitingRoom.unity
   m_ScriptingDefines: []
   m_PlayerSettingsYaml:
     m_Settings: []

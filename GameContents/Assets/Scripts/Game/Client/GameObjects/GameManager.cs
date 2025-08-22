@@ -14,6 +14,7 @@ namespace Game.Client
         LoggedIn,
         WaitUntilLobbiesSceneLoaded,
         InLobbies,
+        InWaitingRoom,
         StartupGamePlay,
         WaitForGamePlay,
         InGamePlay,
@@ -49,6 +50,11 @@ namespace Game.Client
                 case State.WaitUntilLobbiesSceneLoaded:
                     break;
                 case State.InLobbies:
+                    break;
+                case State.InWaitingRoom:
+                    {
+                        StartCoroutine(SceneTransitionUtility.C_LoadAndSwitchAsync("WaitingRoom"));
+                    }
                     break;
                 case State.StartupGamePlay:
                     {
