@@ -1,4 +1,5 @@
-﻿using Game.Lobbies;
+﻿using Game.Client.Network;
+using Game.Lobbies;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -18,7 +19,16 @@ namespace Game.Client.Views
         public void Refresh(UserInLobbyInfo info)
         {
             clientId = info.ClientId;
-            _nickname.text = "User" + clientId.ToString(); // TODO : User 서비스로부터 닉네임 가져오기
+            //_nickname.text = "User" + clientId.ToString(); // TODO : User 서비스로부터 닉네임 가져오기
+            // UserId 표시 (모든 사용자)
+            if (info.CustomProperties.TryGetValue(USER_ID, out string userId))
+            {
+                _nickname.text = userId; // 실제 UserId 표시
+            }
+            else
+            {
+                _nickname.text = "Loading..."; // 아직 UserId가 동기화되지 않음
+            }
 
             // Is ready ?
             if (info.CustomProperties.TryGetValue(IS_READY, out string isReadyString))

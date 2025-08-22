@@ -181,7 +181,8 @@ namespace Game.Client.Views
                 await _controller.SetUserCustomPropertiesAsync(GrpcConnection.clientInfo.ClientId, new Dictionary<string, string>
                 {
                     { IS_MASTER, bool.FalseString }, // 난 방장 아님
-                    { IS_READY, bool.FalseString } // 일단 준비 안함
+                    { IS_READY, bool.FalseString }, // 일단 준비 안함
+                    { USER_ID, GrpcConnection.clientInfo.UserId } // UserId 저장
                 });
 
                 _lobbyList.Hide(); // TODO : Canvas 만 숨길게 아니라, View 컴포넌트 비활성화도 해야함. (View 추상화 필요)
@@ -226,7 +227,8 @@ namespace Game.Client.Views
                 await _controller.SetUserCustomPropertiesAsync(GrpcConnection.clientInfo.ClientId, new Dictionary<string, string>
                 {
                     { IS_MASTER, bool.TrueString }, // 내가 방장
-                    { IS_READY, bool.TrueString } // 방장은 항상 준비완료
+                    { IS_READY, bool.TrueString }, // 방장은 항상 준비완료
+                    { USER_ID, GrpcConnection.clientInfo.UserId } // UserId 저장
                 });
 
                 _createLobby.Hide();
@@ -365,6 +367,9 @@ namespace Game.Client.Views
             if (success)
             {
                 MultiplayMatchBlackboard.isMaster = true;
+
+                MultiplayMatchBlackboard.lobbyUsers = new Dictionary<int, string>(_controller.CurrentLobbyUsers);
+
                 // Nothing to do... 서버 할당되어서 이벤트 처리될때까지 그냥 기다림.
             }
             else
@@ -394,6 +399,7 @@ namespace Game.Client.Views
 
             var slot = Instantiate(_userInLobbySlot, _inLobbyContent);
             slot.clientId = clientId;
+            slot.gameObject.SetActive(false); // 아직 유저 데이터가 없으므로 비활성화(UserId 받을 때까지 비활성화)
             _userInLobbySlots.Add(slot);
         }
 
@@ -428,7 +434,11 @@ namespace Game.Client.Views
                 CustomProperties = { props }
             });
 
-            _userInLobbySlots[slotIndex].gameObject.SetActive(true);
+            if (props.ContainsKey(USER_ID))
+            {
+                // UserId 가 동기화되었으면 이제 슬롯 활성화
+                _userInLobbySlots[slotIndex].gameObject.SetActive(true);
+            }
 
             if (clientId == GrpcConnection.clientInfo.ClientId)
             {

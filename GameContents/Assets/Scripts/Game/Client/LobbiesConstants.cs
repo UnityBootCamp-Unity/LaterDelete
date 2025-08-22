@@ -18,5 +18,7 @@
 
         public const string IS_MASTER = "IsMaster";
         public const string IS_READY = "IsReady";
+
+        public const string USER_ID = "UserId"; // UserId는 GrpcConnection에서 가져온다.
     }
 }

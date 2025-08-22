@@ -27,14 +27,15 @@ namespace Game {
             "Cgxjb21tb24ucHJvdG8SBGdhbWUaHmdvb2dsZS9wcm90b2J1Zi9kdXJhdGlv",
             "bi5wcm90bxofZ29vZ2xlL3Byb3RvYnVmL3RpbWVzdGFtcC5wcm90byI4CgZS",
             "ZXN1bHQSDwoHc3VjY2VzcxgBIAEoCBIPCgdtZXNzYWdlGAIgASgJEgwKBGNv",
-            "ZGUYAyABKAUiZgoKQ2xpZW50SW5mbxIRCgljbGllbnRfaWQYASABKAUSEwoL",
+            "ZGUYAyABKAUidwoKQ2xpZW50SW5mbxIRCgljbGllbnRfaWQYASABKAUSEwoL",
             "c2Vzc2lvbnNfaWQYAiABKAkSMAoMY29ubmVjdGVkX2F0GAMgASgLMhouZ29v",
-            "Z2xlLnByb3RvYnVmLlRpbWVzdGFtcGIGcHJvdG8z"));
+            "Z2xlLnByb3RvYnVmLlRpbWVzdGFtcBIPCgd1c2VyX2lkGAQgASgJYgZwcm90",
+            "bzM="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::Google.Protobuf.WellKnownTypes.DurationReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.TimestampReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
             new pbr::GeneratedClrTypeInfo(typeof(global::Game.Result), global::Game.Result.Parser, new[]{ "Success", "Message", "Code" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Game.ClientInfo), global::Game.ClientInfo.Parser, new[]{ "ClientId", "SessionsId", "ConnectedAt" }, null, null, null, null)
+            new pbr::GeneratedClrTypeInfo(typeof(global::Game.ClientInfo), global::Game.ClientInfo.Parser, new[]{ "ClientId", "SessionsId", "ConnectedAt", "UserId" }, null, null, null, null)
           }));
     }
     #endregion
@@ -351,6 +352,7 @@ namespace Game {
       clientId_ = other.clientId_;
       sessionsId_ = other.sessionsId_;
       connectedAt_ = other.connectedAt_ != null ? other.connectedAt_.Clone() : null;
+      userId_ = other.userId_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -396,6 +398,18 @@ namespace Game {
       }
     }
 
+    /// <summary>Field number for the "user_id" field.</summary>
+    public const int UserIdFieldNumber = 4;
+    private string userId_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string UserId {
+      get { return userId_; }
+      set {
+        userId_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -414,6 +428,7 @@ namespace Game {
       if (ClientId != other.ClientId) return false;
       if (SessionsId != other.SessionsId) return false;
       if (!object.Equals(ConnectedAt, other.ConnectedAt)) return false;
+      if (UserId != other.UserId) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -424,6 +439,7 @@ namespace Game {
       if (ClientId != 0) hash ^= ClientId.GetHashCode();
       if (SessionsId.Length != 0) hash ^= SessionsId.GetHashCode();
       if (connectedAt_ != null) hash ^= ConnectedAt.GetHashCode();
+      if (UserId.Length != 0) hash ^= UserId.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -454,6 +470,10 @@ namespace Game {
         output.WriteRawTag(26);
         output.WriteMessage(ConnectedAt);
       }
+      if (UserId.Length != 0) {
+        output.WriteRawTag(34);
+        output.WriteString(UserId);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -476,6 +496,10 @@ namespace Game {
         output.WriteRawTag(26);
         output.WriteMessage(ConnectedAt);
       }
+      if (UserId.Length != 0) {
+        output.WriteRawTag(34);
+        output.WriteString(UserId);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -494,6 +518,9 @@ namespace Game {
       }
       if (connectedAt_ != null) {
         size += 1 + pb::CodedOutputStream.ComputeMessageSize(ConnectedAt);
+      }
+      if (UserId.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(UserId);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -518,6 +545,9 @@ namespace Game {
           ConnectedAt = new global::Google.Protobuf.WellKnownTypes.Timestamp();
         }
         ConnectedAt.MergeFrom(other.ConnectedAt);
+      }
+      if (other.UserId.Length != 0) {
+        UserId = other.UserId;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -553,6 +583,10 @@ namespace Game {
             input.ReadMessage(ConnectedAt);
             break;
           }
+          case 34: {
+            UserId = input.ReadString();
+            break;
+          }
         }
       }
     #endif
@@ -585,6 +619,10 @@ namespace Game {
               ConnectedAt = new global::Google.Protobuf.WellKnownTypes.Timestamp();
             }
             input.ReadMessage(ConnectedAt);
+            break;
+          }
+          case 34: {
+            UserId = input.ReadString();
             break;
           }
         }

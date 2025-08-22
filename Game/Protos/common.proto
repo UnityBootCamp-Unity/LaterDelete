@@ -13,4 +13,5 @@ message ClientInfo {
 	int32 client_id = 1;
 	string sessions_id = 2;
 	google.protobuf.Timestamp connected_at = 3;
+	string user_id = 4;
 }

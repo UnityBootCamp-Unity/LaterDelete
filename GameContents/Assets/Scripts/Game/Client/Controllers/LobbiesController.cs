@@ -61,6 +61,22 @@ namespace Game.Client.Controllers
             }
         }
 
+        public IReadOnlyDictionary<int, string> CurrentLobbyUsers
+        {
+            get
+            {
+                var users = new Dictionary<int, string>();
+                foreach (var userProps in userCustomProperties)
+                {
+                    if (userProps.Value.TryGetValue(USER_ID, out string userId))
+                    {
+                        users[userProps.Key] = userId;
+                    }
+                }
+                return users;
+            }
+        }
+
 
         private LobbiesService.LobbiesServiceClient _lobbiesClient;
         private AsyncServerStreamingCall<LobbyEvent> _eventStream;

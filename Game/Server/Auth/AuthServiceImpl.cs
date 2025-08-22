@@ -29,7 +29,8 @@ namespace Game.Server.Auth
                     {
                         ClientId = _clientIdGenerator.AssignId(),
                         SessionsId = response.sessionId,
-                        ConnectedAt = Timestamp.FromDateTime(response.createdAt)
+                        ConnectedAt = Timestamp.FromDateTime(response.createdAt),
+                        UserId = request.Username
                     },
                     Jwt = response.jwt,
                     Result = new Result
@@ -49,6 +50,7 @@ namespace Game.Server.Auth
                         ClientId = -1, // TODO : ClientIdGenerator 가지고 부여해줘야함 
                         SessionsId = "Error",
                         ConnectedAt = default,
+                        UserId = "Error"
                     },
                     Jwt = "Error",
                     Result = new Result
@@ -68,6 +70,7 @@ namespace Game.Server.Auth
                         ClientId = -1, // TODO : ClientIdGenerator 가지고 부여해줘야함 
                         SessionsId = "Error",
                         ConnectedAt = default,
+                        UserId = "Error"
                     },
                     Jwt = "Error",
                     Result = new Result

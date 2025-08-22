@@ -6,6 +6,7 @@ using Grpc.Net.Client;
 using System;
 using System.Threading.Tasks;
 using UnityEngine;
+using Utils.Security;
 
 namespace Game.Client.Controllers
 {
@@ -38,6 +39,15 @@ namespace Game.Client.Controllers
                     GrpcConnection.jwt = response.Jwt;
                     GrpcConnection.clientInfo = response.ClientInfo;
 
+                    // 단순하게 PlayerPrefs에 저장
+                    SecurePlayerPrefs.SetSecureString("CurrentUserId", response.ClientInfo.UserId);
+
+                    // 추가 보안 정보도 암호화해서 저장 가능
+                    SecurePlayerPrefs.SetSecureString("LastLoginTime", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"));
+                    //SecurePlayerPrefs.SetSecureInt("ClientId", response.ClientInfo.ClientId);
+
+                    Debug.Log($"[AuthController] User '{username}' logged in successfully (encrypted storage)");
+
                     GameManager.instance.ChangeState(State.LoggedIn);
                 }
 
@@ -58,10 +68,15 @@ namespace Game.Client.Controllers
                     SessionId = GrpcConnection.clientInfo.SessionsId,
                 });
 
+                // 로그아웃 시 보안 정보 완전 삭제
+                SecurePlayerPrefs.DeleteSecureKey("CurrentUserId");
+                SecurePlayerPrefs.DeleteSecureKey("LastLoginTime");
+
                 return "logged out.";
             }
             catch (Exception ex)
             {
+                Debug.LogError($"[AuthController] Logout failed: {ex}");
                 return ex.ToString();
             }
         }

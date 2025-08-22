@@ -17,5 +17,7 @@ namespace Game.Client.Network
 
         // 신규: 재접속 토큰(앱 재시작 후 Resume에 사용)
         public static string sessionToken;
+
+        public static Dictionary<int, string> lobbyUsers; // ClientId -> UserId 매핑
     }
 }
