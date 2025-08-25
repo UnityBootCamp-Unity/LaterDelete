@@ -28,6 +28,8 @@ namespace Game.Client.Network
             {
                 Debug.Log($"[{nameof(Bootstrap)}] Role : Client");
                 SceneManager.LoadScene("Login");
+                //SceneManager.LoadScene("Lobby");
+
             }
             else
             {

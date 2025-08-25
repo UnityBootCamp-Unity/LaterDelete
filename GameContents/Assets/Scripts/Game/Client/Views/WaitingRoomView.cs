@@ -17,7 +17,7 @@ namespace Game.Client.Views
     public class WaitingRoomView : MonoBehaviour
     {
         [Header("Controllers")]
-        [SerializeField] LobbiesController _lobbiesController;
+        [SerializeField] LobbiesController _lobbiesController; // 비어도 됨(확인 중)
 
         [Header("Canvas - PlayerCanvas")]
         [SerializeField] Transform _inLobbyContent;
@@ -40,7 +40,9 @@ namespace Game.Client.Views
         [Header("Canvas - GameStarting")]
         [SerializeField] Canvas _gameStarting;
 
-        private async void Start()
+        bool isQuit = false;
+
+        private void Awake()
         {
             //_loading.Hide(); 일단 중지
             _gameStarting.Hide();
@@ -50,8 +52,16 @@ namespace Game.Client.Views
             _userInLobbySlots = new List<UserInLobbyInfoSlot>(4); // 이 게임은 4명을 초과하는 인게임 컨텐츠가없다. 이정도로 적은 데이터는 선형 O(N)탐색이 Hash O(1) 탐색보다 저렴하다.
         }
 
+        private void ResolveController()
+        {
+            if (_lobbiesController == null) _lobbiesController = LobbiesController.Instance;
+            if (_lobbiesController == null) { Debug.LogError("LobbiesController missing"); enabled = false; }
+        }
+
         private void OnEnable()
         {
+            ResolveController();
+
             _readyButton.onClick.AddListener(OnInLobbyReadyButtonClicked);
             _leaveRoom.onClick.AddListener(OnInLobbyLeaveButtonClicked);
             _startButton.onClick.AddListener(OnInLobbyPlayButtonClicked);
@@ -66,13 +76,22 @@ namespace Game.Client.Views
 
         private void OnDisable()
         {
+
             _readyButton.onClick.RemoveListener(OnInLobbyReadyButtonClicked);
             _leaveRoom.onClick.RemoveListener(OnInLobbyLeaveButtonClicked);
             _startButton.onClick.RemoveListener(OnInLobbyPlayButtonClicked);
+
+            if (_lobbiesController == null) return; // 컨트롤러가 없으면 이벤트 해제 불필요
             _lobbiesController.onMemberJoin -= OnMemberJoin;
             _lobbiesController.onMemberLeft -= OnMemberLeft;
             _lobbiesController.onLobbyPropsChanged -= OnLobbyPropsChanged;
             _lobbiesController.onUserPropsChanged -= OnUserPropsChanged;
+        }
+
+        private void OnApplicationQuit()
+        {
+            isQuit = true;
+            OnInLobbyLeaveButtonClicked();
         }
 
         private void RefreshUserInLobbyContent(IList<UserInLobbyInfo> infos)
@@ -87,15 +106,16 @@ namespace Game.Client.Views
 
             foreach (var info in infos)
             {
-                var slot = Instantiate(_userInLobbySlot, _inLobbyContent);
+                var slot = Instantiate(_userInLobbySlot, _inLobbyContent, false);
+                slot.Init(_lobbiesController);
                 slot.Refresh(info);
                 slot.gameObject.SetActive(true);
                 _userInLobbySlots.Add(slot);
             }
         }
-        private async void OnInLobbyReadyButtonClicked()
+        private async void OnInLobbyReadyButtonClicked() // 필요 없음?
         {
-            if (_lobbiesController.isMaster)
+            /*if (_lobbiesController.isMaster)
                 return; // 방장은 Ready 상태를 변경할 수 없음
 
             _readyButton.interactable = false; // 처리 중 클릭 방지
@@ -128,12 +148,15 @@ namespace Game.Client.Views
             // IsReady만 업데이트 (기존 데이터 유지)
             var response = await _lobbiesController.SetUserCustomPropertiesAsync(GrpcConnection.clientInfo.ClientId, existingProps);
 
-            _readyButton.interactable = true; // 처리 완료 후 클릭 가능
+            _readyButton.interactable = true; // 처리 완료 후 클릭 가능*/
         }
 
         private async void OnInLobbyLeaveButtonClicked()
         {
             var (success, message) = await _lobbiesController.LeaveLobbyAsync();
+
+            if (isQuit)
+                return;
 
             if (success)
             {
@@ -184,6 +207,7 @@ namespace Game.Client.Views
             Debug.Log("OnMemberJoin");
 
             var slot = Instantiate(_userInLobbySlot, _inLobbyContent);
+            slot.Init(_lobbiesController);
             slot.clientId = clientId;
             slot.gameObject.SetActive(false); // 아직 유저 데이터가 없으므로 비활성화(UserId 받을 때까지 비활성화)
             _userInLobbySlots.Add(slot);
@@ -287,33 +311,16 @@ namespace Game.Client.Views
             {
                 // 방장은 항상 Ready 상태, 초록색, 클릭 불가능
                 _startButton.gameObject.SetActive(true);
-                _readyButton.interactable = false;
-                _readyButton.GetComponentInChildren<TMPro.TMP_Text>().text = "Ready";
-                _readyButton.targetGraphic.color = Color.green;
             }
             else
             {
                 // 일반 플레이어
                 _startButton.gameObject.SetActive(false);
-                _readyButton.interactable = true;
 
-                // 현재 Ready 상태 확인
+                /*// 현재 Ready 상태 확인 // 필요 없음?
                 bool isReady = false;
                 if (_lobbiesController.myUsercustomProperties.TryGetValue(IS_READY, out string isReadyString))
-                    isReady = bool.Parse(isReadyString);
-
-                if (isReady)
-                {
-                    // Ready 상태: 초록색, "Cancel" 텍스트
-                    _readyButton.GetComponentInChildren<TMPro.TMP_Text>().text = "Cancel";
-                    _readyButton.targetGraphic.color = Color.green;
-                }
-                else
-                {
-                    // Not Ready 상태: 빨간색, "Ready" 텍스트
-                    _readyButton.GetComponentInChildren<TMPro.TMP_Text>().text = "Ready";
-                    _readyButton.targetGraphic.color = Color.red;
-                }
+                    isReady = bool.Parse(isReadyString);*/
             }
         }
 
@@ -412,13 +419,20 @@ namespace Game.Client.Views
 
         private void InitializeCurrentLobbyMembers()
         {
-            // 현재 로비에 있는 멤버들의 슬롯 생성
+            /*// 현재 로비에 있는 멤버들의 슬롯 생성
             foreach (var kvp in _lobbiesController.userCustomProperties)
             {
                 RefreshUserInLobbyContent(new List<UserInLobbyInfo> {
                 new UserInLobbyInfo { ClientId = kvp.Key, CustomProperties = { kvp.Value } }
             });
             }
+            RefreshInLobbyUIs();*/
+
+            var list = new List<UserInLobbyInfo>();
+            foreach (var kvp in _lobbiesController.userCustomProperties)
+                list.Add(new UserInLobbyInfo { ClientId = kvp.Key, CustomProperties = { kvp.Value } });
+
+            RefreshUserInLobbyContent(list);   // 한 번에!
             RefreshInLobbyUIs();
         }
     }

@@ -29,6 +29,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/XR Templete/WaitingRoom.unity
     guid: e1ad08fa6db398344bf2cfa7f29ba9f9
+  - enabled: 1
+    path: Assets/Scenes/XR Templete/Lobby.unity
+    guid: 7655e9fd540644d4ba62fc3c6eb76ebb
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
     com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: a47c07a8a7fb7454090fcdd9b814d7f1, type: 2}

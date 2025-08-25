@@ -38,6 +38,8 @@ MonoBehaviour:
     m_path: Assets/Scenes/Test_InGameNetwork.unity
   - m_enabled: 1
     m_path: Assets/Scenes/XR Templete/WaitingRoom.unity
+  - m_enabled: 1
+    m_path: Assets/Scenes/XR Templete/Lobby.unity
   m_ScriptingDefines: []
   m_PlayerSettingsYaml:
     m_Settings: []
@@ -58,6 +60,8 @@ MonoBehaviour:
         m_ExplicitArrayBoundsChecks: 0
         m_CompressionType: 0
         m_InstallInBuildFolder: 0
+        m_InsightsSettingsContainer:
+          m_BuildProfileEngineDiagnosticsState: 2
         m_WindowsBuildAndRunDeployTarget: 0
         m_Architecture: 0
         m_CreateSolution: 0

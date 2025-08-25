@@ -136,6 +136,7 @@ namespace Game.Client.Controllers
             
             public void AddClient(int clientId)
             {
+                if (_userCustomProperties.ContainsKey(clientId)) return; // 중복 가드
                 _userCustomProperties[clientId] = new Dictionary<string, string>();
                 _numClient++;
             }
@@ -214,13 +215,26 @@ namespace Game.Client.Controllers
         public event Action<IDictionary<string, string>> onLobbyPropsChanged;
         public event Action<int, IDictionary<string, string>> onUserPropsChanged;
 
+        public static LobbiesController Instance { get; private set; }
 
-        private async void Start()
+        private void Awake()
         {
-            await InitializeAsync();
+
+            if (Instance == null)
+            {
+                Instance = this;
+                DontDestroyOnLoad(gameObject);
+            }
+            else
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            InitializeAsync();
         }
 
-        private async Task InitializeAsync()
+        private void InitializeAsync()
         {
             _cachedLobby = new LocalLobby();
             _cts = new CancellationTokenSource();
@@ -282,6 +296,7 @@ namespace Game.Client.Controllers
                         // User 정보 캐싱
                         foreach (var userInfo in response.UserInLobbyInfos)
                         {
+                            _cachedLobby.AddClient(userInfo.ClientId); // ★ 반드시 먼저: 빈 프로퍼티여도 엔트리 생성
                             foreach (var (k, v) in userInfo.CustomProperties)
                             {
                                 _cachedLobby.SetUserCustomProperty(userInfo.ClientId, k, v);
@@ -350,14 +365,14 @@ namespace Game.Client.Controllers
             {
                 { IS_MASTER, bool.FalseString },
                 { IS_READY, bool.FalseString }, // 마스터가 바뀌면 준비 상태도 초기화
-                { USER_ID, GrpcConnection.clientInfo.UserId }
+                //{ USER_ID, GrpcConnection.clientInfo.UserId }
             });
 
             await SetUserCustomPropertiesAsync(nextMasterClientId, new Dictionary<string, string>
             {
                 { IS_MASTER, bool.TrueString },
                 { IS_READY, bool.TrueString },
-                { USER_ID, GrpcConnection.clientInfo.UserId }
+                //{ USER_ID, GrpcConnection.clientInfo.UserId }
             });
         }
 

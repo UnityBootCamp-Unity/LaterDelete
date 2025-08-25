@@ -68,9 +68,15 @@ namespace Game.Client.Views
             _userInLobbySlot.gameObject.SetActive(false);
             _userInLobbySlots = new List<UserInLobbyInfoSlot>(8); // 이 게임은 8명을 초과하는 인게임 컨텐츠가없다. 이정도로 적은 데이터는 선형 O(N)탐색이 Hash O(1) 탐색보다 저렴하다.
         }
+        private void ResolveController()
+        {
+            if (_controller == null) _controller = LobbiesController.Instance;
+        }
 
         private void OnEnable()
         {
+            ResolveController();
+
             _lobbyListRefreshList.onClick.AddListener(RefreshLobbyList);
             _lobbyListJoinLobby.onClick.AddListener(OnLobbyListJoinLobbyButtonClicked);
             _lobbyListCreateLobby.onClick.AddListener(_createLobby.Show);
@@ -187,7 +193,7 @@ namespace Game.Client.Views
 
                 //_lobbyList.Hide(); // TODO : Canvas 만 숨길게 아니라, View 컴포넌트 비활성화도 해야함. (View 추상화 필요) // 필요 없음
                 // *** 변경: 캔버스 전환 대신 3D 씬으로 이동 ***
-                GameManager.instance.ChangeState(State.InWaitingRoom);
+                GameManager.instance.ChangeState(State.SceneLoadWaitingRoom);
                 return;
             }
             else
@@ -219,7 +225,7 @@ namespace Game.Client.Views
 
             if (success)
             {
-                //RefreshUserInLobbyContent(userInfos); 씬 이동 시 필요 없음
+                RefreshUserInLobbyContent(userInfos); //씬 이동 시 필요 없음
 
                 await _controller.SetLobbyCustomPropertiesAsync(new Dictionary<string, string>
                 {
@@ -237,7 +243,7 @@ namespace Game.Client.Views
                 //_createLobby.Hide();
                 //_lobbyList.Hide(); 씬 이동 시 필요 없음
                 // *** 변경: 캔버스 전환 대신 3D 씬으로 이동 ***
-                SceneManager.LoadScene("WaitingRoom");
+                GameManager.instance.ChangeState(State.SceneLoadWaitingRoom);
                 return;
             }
 

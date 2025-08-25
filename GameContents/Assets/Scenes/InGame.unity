@@ -270,6 +270,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3325887429886530535, guid: f6d3729ee44ba964d863624bf522691a, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 594049351
+      objectReference: {fileID: 0}
+    - target: {fileID: 3325887429886530535, guid: f6d3729ee44ba964d863624bf522691a, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 2958812696
+      objectReference: {fileID: 0}
     - target: {fileID: 6127957932068660980, guid: f6d3729ee44ba964d863624bf522691a, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 3040251013
@@ -281,25 +289,8 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 36478787958604980, guid: f6d3729ee44ba964d863624bf522691a, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1725703412}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f6d3729ee44ba964d863624bf522691a, type: 3}
---- !u!1 &1725703411 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 36478787958604980, guid: f6d3729ee44ba964d863624bf522691a, type: 3}
-  m_PrefabInstance: {fileID: 1725703410}
-  m_PrefabAsset: {fileID: 0}
---- !u!1652712579 &1725703412
-MultiplayerRolesData:
-  m_ObjectHideFlags: 2
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1725703411}
-  m_GameObjectRolesMask: 2
-  m_ComponentsRolesMasks: []
 --- !u!1 &1743176107
 GameObject:
   m_ObjectHideFlags: 0
