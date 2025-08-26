@@ -8,6 +8,7 @@ using Game.Client.Network;
 using Game.Lobbies;
 using UnityEngine;
 using UnityEngine.InputSystem.XR;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Utils;
 using static Game.Client.LobbiesConstants;
@@ -161,7 +162,9 @@ namespace Game.Client.Views
             if (success)
             {
                 // *** 변경: 캔버스 전환 대신 로비 리스트 씬으로 이동 ***
-                StartCoroutine(SceneTransitionUtility.C_LoadAndSwitchAsync("Lobbies"));
+                //StartCoroutine(SceneTransitionUtility.C_LoadAndSwitchAsync("Lobbies"));
+                GameManager.instance.ChangeState(State.InLobbies);
+                SceneManager.LoadScene("Lobby");
                 return;
             }
             else

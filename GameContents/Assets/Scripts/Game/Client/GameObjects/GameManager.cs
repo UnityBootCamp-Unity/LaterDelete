@@ -44,9 +44,7 @@ namespace Game.Client
                 case State.LoggedIn:
                     {
                         // 씬 이동 없이 Lobbies UI로 전환
-                        //SwitchToLobbiesUI(State.InWaitingRoom);
-                        ChangeState(State.WaitUntilLobbiesSceneLoaded); // 임시
-                        StartCoroutine(LoadSceneAsync("Lobbies", State.InLobbies));
+                        SwitchToLobbiesUI(State.InWaitingRoom);
                     }
                     break;
 
@@ -71,7 +69,7 @@ namespace Game.Client
                     {
                         ChangeState(State.WaitForGamePlay);
                         StartCoroutine(SceneTransitionUtility.C_LoadAndSwitchAsync(
-                            "InGame", null, null, () => ChangeState(State.InGamePlay)));
+                            "Stage", null, null, () => ChangeState(State.InGamePlay)));
                     }
                     break;
 

@@ -10,7 +10,7 @@ using Utils.Singletons; // 네가 올린 SingletonMonoBase<T> 네임스페이스
 [DefaultExecutionOrder(-10000)] // 가능한 한 먼저 실행되어 중복/수명 문제 최소화
 public class XRDeviceSimulatorGuard : SingletonMonoBase<XRDeviceSimulatorGuard>
 {
-    private void Start()
+    private void Awake()
     {
         // 에디터에서만 유지
         if (!Application.isEditor)

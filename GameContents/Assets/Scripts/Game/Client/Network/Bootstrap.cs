@@ -27,8 +27,8 @@ namespace Game.Client.Network
             else if (isClient)
             {
                 Debug.Log($"[{nameof(Bootstrap)}] Role : Client");
-                SceneManager.LoadScene("Login");
-                //SceneManager.LoadScene("Lobby");
+                //SceneManager.LoadScene("Login");
+                SceneManager.LoadScene("Lobby");
 
             }
             else

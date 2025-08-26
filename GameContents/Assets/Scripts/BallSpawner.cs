@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 public class BallSpawner : MonoBehaviour
 {
     [Header("Config")]
-    public StageBallDatabase database;
+    public StageDatabase database;
     [Tooltip("현재 스테이지 ID (비워두면 씬 이름 사용)")]
     public string stageIdOverride;
 

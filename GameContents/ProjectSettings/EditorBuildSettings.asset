@@ -21,10 +21,10 @@ EditorBuildSettings:
     path: Assets/Scenes/InGame.unity
     guid: b73216e7834e56b40af96bbf2c7a7b59
   - enabled: 1
-    path: Assets/Scenes/InGame/Client.unity
+    path: Assets/Samples/XR Interaction Toolkit/InGame/Client.unity
     guid: 9f263c2be567bac4a84802001534c5a1
   - enabled: 1
-    path: Assets/Scenes/InGame/Server.unity
+    path: Assets/Samples/XR Interaction Toolkit/InGame/Server.unity
     guid: fb34eed2bbcd99145b0ee0f40e615685
   - enabled: 1
     path: Assets/Scenes/XR Templete/WaitingRoom.unity
