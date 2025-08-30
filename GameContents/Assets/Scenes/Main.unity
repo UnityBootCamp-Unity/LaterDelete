@@ -400,15 +400,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e7d22f8c6ae7e414280a972efb01deea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!1652712579 &476014135
-MultiplayerRolesData:
-  m_ObjectHideFlags: 2
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 476014131}
-  m_GameObjectRolesMask: 1
-  m_ComponentsRolesMasks: []
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -468,7 +459,6 @@ GameObject:
   m_Component:
   - component: {fileID: 926583672}
   - component: {fileID: 926583671}
-  - component: {fileID: 926583673}
   m_Layer: 0
   m_Name: GameClient
   m_TagString: Untagged
@@ -503,15 +493,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1652712579 &926583673
-MultiplayerRolesData:
-  m_ObjectHideFlags: 2
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 926583670}
-  m_GameObjectRolesMask: 1
-  m_ComponentsRolesMasks: []
 --- !u!1 &1074811580
 GameObject:
   m_ObjectHideFlags: 0
@@ -671,9 +652,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 6598815579406187037, guid: 18ddb545287c546e19cc77dc9fbb2189, type: 3}
       insertIndex: -1
       addedObject: {fileID: 476014132}
-    - targetCorrespondingSourceObject: {fileID: 6598815579406187037, guid: 18ddb545287c546e19cc77dc9fbb2189, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 476014135}
   m_SourcePrefab: {fileID: 100100000, guid: 18ddb545287c546e19cc77dc9fbb2189, type: 3}
 --- !u!1 &1556690399
 GameObject:
@@ -685,7 +663,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1556690401}
   - component: {fileID: 1556690400}
-  - component: {fileID: 1556690402}
   m_Layer: 0
   m_Name: Controller
   m_TagString: Untagged
@@ -720,15 +697,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1652712579 &1556690402
-MultiplayerRolesData:
-  m_ObjectHideFlags: 2
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1556690399}
-  m_GameObjectRolesMask: 1
-  m_ComponentsRolesMasks: []
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

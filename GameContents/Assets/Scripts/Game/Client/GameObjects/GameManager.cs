@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Utils.Security;
 
 namespace Game.Client
 {
@@ -68,8 +69,12 @@ namespace Game.Client
                 case State.StartupGamePlay:
                     {
                         ChangeState(State.WaitForGamePlay);
-                        StartCoroutine(SceneTransitionUtility.C_LoadAndSwitchAsync(
-                            "Stage", null, null, () => ChangeState(State.InGamePlay)));
+
+                        // 동기 씬 로드
+                        SceneManager.LoadScene("InGame", LoadSceneMode.Single);
+
+                        // 씬 로드가 끝났으므로 바로 상태 전환
+                        ChangeState(State.InGamePlay);
                     }
                     break;
 
@@ -125,6 +130,11 @@ namespace Game.Client
                 yield return null;
 
             ChangeState(targetState);
+        }
+
+        private void OnApplicationQuit()
+        {
+            SecurePlayerPrefs.ClearAll(); // 앱 종료 시 로그인 정보 삭제
         }
     }
 }

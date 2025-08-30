@@ -13,32 +13,32 @@ MonoBehaviour:
   m_Name: StageDatabase
   m_EditorClassIdentifier: Assembly-CSharp::StageDatabase
   stages:
-  - stageId: 1
+  - stageId: Stage1
     sceneName: Stage1
     ballCount: 6
     pigCount: 5
     previewResourcePath: Stage1
-  - stageId: 2
+  - stageId: Stage2
     sceneName: Stage2
     ballCount: 6
     pigCount: 3
     previewResourcePath: Stage2
-  - stageId: 3
+  - stageId: Stage3
     sceneName: Stage3
     ballCount: 6
     pigCount: 3
     previewResourcePath: Stage3
-  - stageId: 4
+  - stageId: Stage4
     sceneName: Stage4
     ballCount: 6
     pigCount: 2
     previewResourcePath: Stage4
-  - stageId: 5
+  - stageId: Stage5
     sceneName: Stage5
     ballCount: 6
     pigCount: 6
     previewResourcePath: Stage5
-  - stageId: 6
+  - stageId: Stage6
     sceneName: Stage6
     ballCount: 6
     pigCount: 6

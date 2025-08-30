@@ -15,6 +15,7 @@ public class Bird : MonoBehaviour
     private float sleepTimer;
     private bool isDespawning;
 
+    public static int AliveCount { get; private set; }
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
@@ -65,5 +66,14 @@ public class Bird : MonoBehaviour
         if (isDespawning) return;
         isDespawning = true;
         Destroy(gameObject);
+    }
+
+    void OnEnable() 
+    { 
+        AliveCount++; 
+    }
+    void OnDisable() 
+    { 
+        AliveCount = Mathf.Max(0, AliveCount - 1); 
     }
 }

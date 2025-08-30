@@ -10,6 +10,7 @@ namespace Assets.Scripts.Utils.EventGuard
 {
     public class EventSystemGuard : MonoBehaviour
     {
+#if UNITY_CLIENT
         private static EventSystemGuard instance;
 
         void Awake()
@@ -45,6 +46,7 @@ namespace Assets.Scripts.Utils.EventGuard
         {
             CleanupDuplicateEventSystems();
         }
+#endif
 
         void CleanupDuplicateEventSystems()
         {

@@ -64,7 +64,7 @@ namespace Game.Shared.Network
             if (isClient)
             {
                 Debug.Log($"[{nameof(InGameNetworkBootstrap)}] Role : Client");
-                SceneManager.LoadScene("Client", LoadSceneMode.Additive);
+                SceneManager.LoadScene("Test_InGameNetwork", LoadSceneMode.Additive);
                 await StartClientAsync();
             }
 
@@ -115,6 +115,7 @@ namespace Game.Shared.Network
 
         void OnClientConnected(ulong clientId)
         {
+            Debug.Log($"Client {clientId} connected"); // 이 로그가 나오는지 확인
         }
 
         void OnClientDisconnected(ulong clientId) 
@@ -144,6 +145,30 @@ namespace Game.Shared.Network
                     {
                         allocationReady = true;
                         break;
+                    }
+                }
+
+                if (allocationReady)
+                {
+                    string TserverIp = MultiplayMatchBlackboard.allocation.IpAddress;
+                    ushort TserverPort = (ushort)MultiplayMatchBlackboard.allocation.GamePort;
+
+                    Debug.Log($"=== Connection Attempt ===");
+                    Debug.Log($"Server IP: {TserverIp}");
+                    Debug.Log($"Server Port: {TserverPort}");
+                    Debug.Log($"Allocation ID: {MultiplayMatchBlackboard.allocation.AllocationId}");
+
+                    _transport.SetConnectionData(TserverIp, TserverPort);
+
+                    // 연결 시도 전 잠깐 대기
+                    await Task.Delay(3000);
+
+                    bool Tok = _networkManager.StartClient();
+
+                    if (!Tok)
+                    {
+                        Debug.LogError("NetworkManager.StartClient() returned false");
+                        return;
                     }
                 }
 

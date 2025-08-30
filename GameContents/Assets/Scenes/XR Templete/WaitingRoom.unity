@@ -328,7 +328,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 63eeec93c708bf641a4fa297b4d71006, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StageButton
-  stageId: 4
+  stageId: Stage4
   selectionUI: {fileID: 61706036}
 --- !u!1 &49348526
 GameObject:
@@ -1416,7 +1416,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 63eeec93c708bf641a4fa297b4d71006, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StageButton
-  stageId: 1
+  stageId: Stage1
   selectionUI: {fileID: 61706036}
 --- !u!1 &342406606
 GameObject:
@@ -1673,7 +1673,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 63eeec93c708bf641a4fa297b4d71006, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StageButton
-  stageId: 3
+  stageId: Stage3
   selectionUI: {fileID: 61706036}
 --- !u!1 &366225559
 GameObject:
@@ -3274,7 +3274,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 63eeec93c708bf641a4fa297b4d71006, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StageButton
-  stageId: 6
+  stageId: Stage6
   selectionUI: {fileID: 61706036}
 --- !u!1 &1132357385
 GameObject:
@@ -4041,7 +4041,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 63eeec93c708bf641a4fa297b4d71006, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StageButton
-  stageId: 2
+  stageId: Stage2
   selectionUI: {fileID: 61706036}
 --- !u!1 &1423445776
 GameObject:
@@ -5213,7 +5213,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 63eeec93c708bf641a4fa297b4d71006, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StageButton
-  stageId: 5
+  stageId: Stage5
   selectionUI: {fileID: 61706036}
 --- !u!1 &1719692864
 GameObject:
@@ -5458,16 +5458,16 @@ MonoBehaviour:
   stagePrefabs:
   - stageId: Stage1
     prefab: {fileID: 8445662630694431011, guid: 6ae4c9336f2fbe441bc777bb9ddeaa01, type: 3}
-    sceneName: Stage1
+    sceneName: Stage
   - stageId: Stage2
     prefab: {fileID: 5962151716605017462, guid: 03fd900d08389ea489eac196e85671a3, type: 3}
-    sceneName: Stage2
+    sceneName: Stage
   - stageId: Stage3
     prefab: {fileID: 7035497425421229374, guid: 7c6c184570a8f3548b63fd11d7961432, type: 3}
-    sceneName: Stage3
+    sceneName: Stage
   - stageId: Stage4
     prefab: {fileID: 2733538929328628761, guid: a53f0eb75a7b83a41a31ac362eb91159, type: 3}
-    sceneName: Stage4
+    sceneName: Stage
   selectedStageId: 
   selectedSceneName: 
 --- !u!4 &1806410667

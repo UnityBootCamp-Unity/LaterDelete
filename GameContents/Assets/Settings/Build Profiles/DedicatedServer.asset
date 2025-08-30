@@ -21,8 +21,6 @@ MonoBehaviour:
   m_OverrideGlobalSceneList: 1
   m_Scenes:
   - m_enabled: 1
-    m_path: Assets/Scenes/Loading.unity
-  - m_enabled: 1
     m_path: Assets/Scenes/InGame.unity
   - m_enabled: 1
     m_path: Assets/Scenes/InGame/Server.unity

@@ -1,5 +1,6 @@
+// Assets/Scripts/StageManager.cs
+using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public class StageManager : MonoBehaviour
@@ -8,97 +9,109 @@ public class StageManager : MonoBehaviour
     public GameObject clearPanel;
     public GameObject failPanel;
 
+    [Header("Data")]
+    public StageDatabase database;
+    [Tooltip("선택된 스테이지 ID가 비면 StageInfoManager 또는 씬 이름 사용")]
+    public string stageIdOverride;
+
     [Header("Refs")]
     public BallSpawner ballSpawner; // 없으면 자동 탐색
-    [Tooltip("시작 시 자동으로 씬에서 Pig(또는 Damageable)를 수집")]
-    public bool autoCollectPigs = true;
 
-    private readonly List<Damageable> pigs = new();
-    private int alivePigCount;
-    private bool isEnded;
+    [Header("Timing")]
+    [Tooltip("씬 로드 직후 몇 프레임 쉬고 구독 시작 (스폰 타이밍 보호)")]
+    public int warmupFrames = 2;
 
-    void Start()
+    int targetPigCount;   // SO에서 읽은 '죽여야 하는 총 수'
+    int deadCount;        // 지금까지 죽은 수
+    bool ready;           // 판정 시작 플래그
+    readonly List<Damageable> subscribed = new();
+
+    void Awake()
     {
-        if (!ballSpawner) ballSpawner = FindObjectOfType<BallSpawner>();
-
-        // 패널 초기 상태
         if (clearPanel) clearPanel.SetActive(false);
         if (failPanel) failPanel.SetActive(false);
+    }
 
-        // 돼지 수집 및 이벤트 구독
-        if (autoCollectPigs)
+    IEnumerator Start()
+    {
+        // 스포너/오브젝트 배치가 끝나도록 잠깐 대기
+        for (int i = 0; i < warmupFrames; i++) yield return null;
+
+        if (!ballSpawner) ballSpawner = FindObjectOfType<BallSpawner>();
+
+        // 1) 사용할 stageId 결정
+        string stageId = stageIdOverride;
+        if (string.IsNullOrEmpty(stageId))
+            stageId = StageInfoManager.Instance ? StageInfoManager.Instance.selectedStageId : null;
+        if (string.IsNullOrEmpty(stageId))
+            stageId = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+
+        // 2) SO에서 목표 개수 읽기 (없으면 0으로)
+        targetPigCount = database ? database.GetPigCount(stageId, 0) : 0;
+
+        // 3) 현재 씬의 Pig들 구독 (언제 스폰됐든 '죽을 때'만 필요)
+        foreach (var d in FindObjectsOfType<Damageable>())
         {
-            // Pig만 찾고 싶으면 FindObjectsOfType<Pig>()로 바꿔도 OK
-            foreach (var d in FindObjectsOfType<Damageable>())
-            {
-                // "Pig" 태그를 쓴다면: if (!d.CompareTag("Pig")) continue;
-                pigs.Add(d);
-                d.OnDied += OnPigDied;
-            }
+            // Pig만 집계하고 싶으면 태그 사용 권장
+            if (!d.CompareTag("Pig")) continue;
+            Subscribe(d);
         }
 
-        alivePigCount = pigs.Count;
+        ready = true;
     }
 
     void OnDestroy()
     {
-        // 이벤트 해제(안전)
-        foreach (var p in pigs)
-            if (p != null) p.OnDied -= OnPigDied;
+        foreach (var d in subscribed)
+            if (d) d.OnDied -= OnPigDied;
+        subscribed.Clear();
     }
 
     void Update()
     {
-        if (isEnded) return;
+        if (!ready) return;
 
-        // 모든 돼지가 죽었는지 체크(안전망)
-        if (alivePigCount <= 0)
+        // 클리어: 죽은 수가 목표에 도달
+        if (deadCount >= targetPigCount)
         {
-            Win();
+            ShowClear();
             return;
         }
 
-        // 실패 조건:
-        // 1) 남은 공이 0이고
-        // 2) 여전히 돼지가 남아 있으며
-        // 3) 씬에 활성화된 Bird도 더 이상 없으면(마지막 공이 이미 사라졌는지 확인)
-        if (ballSpawner && ballSpawner.RemainingBalls == 0 && alivePigCount > 0)
+        // 실패: 남은 공 0, 새 없음, 아직 못 죽인 피그 있음
+        if (ballSpawner && ballSpawner.RemainingBalls == 0 && Bird.AliveCount == 0 && deadCount < targetPigCount)
         {
-            // 날아다니는 새가 남아 있으면 아직 결과 보류
-            bool anyBirdAlive = FindObjectsOfType<Bird>().Length > 0;
-            if (!anyBirdAlive)
-                Fail();
+            ShowFail();
         }
     }
 
-    private void OnPigDied(Damageable _)
+    void Subscribe(Damageable d)
     {
-        if (isEnded) return;
-
-        alivePigCount = Mathf.Max(0, alivePigCount - 1);
-        if (alivePigCount <= 0)
-        {
-            Win();
-        }
-        // 남아있으면 승패 보류 (공 소진 여부는 Update에서 확인)
+        if (!d || subscribed.Contains(d)) return;
+        subscribed.Add(d);
+        d.OnDied += OnPigDied;
     }
 
-    private void Win()
+    void OnPigDied(Damageable _)
     {
-        if (isEnded) return;
-        isEnded = true;
+        deadCount = Mathf.Clamp(deadCount + 1, 0, int.MaxValue);
+        // 즉시 판정 갱신
+        if (ready && deadCount >= targetPigCount) ShowClear();
+    }
+
+    void ShowClear()
+    {
         if (clearPanel) clearPanel.SetActive(true);
         if (failPanel) failPanel.SetActive(false);
+        enabled = false;
         Debug.Log("STAGE CLEAR");
-        // 필요하면 Time.timeScale = 0f; 등 추가
     }
 
-    private void Fail()
+    void ShowFail()
     {
-        if (isEnded) return;
-        isEnded = true;
         if (failPanel) failPanel.SetActive(true);
         if (clearPanel) clearPanel.SetActive(false);
+        enabled = false;
         Debug.Log("STAGE FAIL");
     }
 }
