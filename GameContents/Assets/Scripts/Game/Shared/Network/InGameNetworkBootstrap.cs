@@ -23,6 +23,9 @@ namespace Game.Shared.Network
         [SerializeField] UnityTransport _transport;
         IAllocationProvider allocationProvider;
 
+        [SerializeField] string testIp = "20.33.94.7";        // ← Test Allocation의 IP
+        [SerializeField] ushort testPort = 9100;              // ← Test Allocation의 Port
+
         private async void Start()
         {
             await InitializeAsync();
@@ -53,6 +56,7 @@ namespace Game.Shared.Network
             bool isServer = roleflags.HasFlag(MultiplayerRoleFlags.Server);
             bool isClient = roleflags.HasFlag(MultiplayerRoleFlags.Client);
 
+#if UNITY_SERVER
             Debug.Log(roleflags);
             if (isServer)
             {
@@ -60,7 +64,9 @@ namespace Game.Shared.Network
                 SceneManager.LoadScene("Server", LoadSceneMode.Additive);
                 await StartServerAsync();
             }
+#endif
 
+#if UNITY_CLIENT
             if (isClient)
             {
                 Debug.Log($"[{nameof(InGameNetworkBootstrap)}] Role : Client");
@@ -68,6 +74,7 @@ namespace Game.Shared.Network
                 await StartClientAsync();
             }
 
+#endif
             if ((isServer == true && isClient == true) ||
                 (isServer == false && isClient == false))
             {
@@ -85,6 +92,10 @@ namespace Game.Shared.Network
         async Task StartServerAsync()
         {
             //LogServerConfig();
+
+            // 서버 최적화
+            Application.targetFrameRate = 30; // FPS 제한
+            QualitySettings.vSyncCount = 0;   // VSync 비활성화
 
             _transport.SetConnectionData(allocationProvider.ipAddress,
                                          allocationProvider.port,
@@ -127,8 +138,14 @@ namespace Game.Shared.Network
         {
             if (_localTest)
             {
-                // Nothing to do.. 
-                _transport.SetConnectionData("127.0.0.1", 7777);
+                /*// Nothing to do.. 
+                _transport.SetConnectionData("127.0.0.1", 7777);*/
+                 // Test Allocation 서버로 바로 붙기
+                _transport.SetConnectionData(testIp, testPort);
+                bool ok1 = _networkManager.StartClient();
+                if (!ok1) throw new Exception("Failed to connect to server.");
+                Debug.Log("Client started (direct connect).");
+                return; // ← 아래 Allocation 로직 진입 X
             }
             else
             {
@@ -168,6 +185,11 @@ namespace Game.Shared.Network
                     if (!Tok)
                     {
                         Debug.LogError("NetworkManager.StartClient() returned false");
+                        return;
+                    }
+                    else //아래 클라이언트가 2번 시작되는 문제 방지
+                    {
+                        Debug.Log("Client started");
                         return;
                     }
                 }

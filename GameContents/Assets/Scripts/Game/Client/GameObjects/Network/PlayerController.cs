@@ -55,6 +55,17 @@ namespace Game.Client.GameObjects.Network
         {
             base.OnNetworkSpawn();
 
+            Debug.Log($"[Player] OnNetworkSpawn. IsOwner={IsOwner}, IsServer={IsServer}, " +
+            $"OwnerClientId={OwnerClientId}");
+
+            // (권장) 내 소유 오브젝트에만 입력 활성화
+            if (!IsOwner) return;
+
+            _moveAction.action.Enable();
+            _pickUpAction.action.Enable();
+            _throwAction.action.Enable();
+
+
             _moveAction.action.performed += OnMovePerformed;
             _moveAction.action.canceled += OnMoveCanceled;
             _pickUpAction.action.started += OnPickUpStarted;
@@ -68,11 +79,19 @@ namespace Game.Client.GameObjects.Network
         {
             base.OnNetworkDespawn();
 
-            _moveAction.action.performed -= OnMovePerformed;
-            _moveAction.action.canceled -= OnMoveCanceled;
-            _pickUpAction.action.started -= OnPickUpStarted;
-            _pickUpAction.action.canceled -= OnPickUpCanceled;
-            _throwAction.action.started -= OnThrowStarted;
+            if (IsOwner)
+            {
+                _moveAction.action.Disable();
+                _pickUpAction.action.Disable();
+                _throwAction.action.Disable();
+
+
+                _moveAction.action.performed -= OnMovePerformed;
+                _moveAction.action.canceled -= OnMoveCanceled;
+                _pickUpAction.action.started -= OnPickUpStarted;
+                _pickUpAction.action.canceled -= OnPickUpCanceled;
+                _throwAction.action.started -= OnThrowStarted;
+            }
         }
 
         void OnMovePerformed(InputAction.CallbackContext context)

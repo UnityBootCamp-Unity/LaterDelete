@@ -40,6 +40,8 @@ namespace Game.Client.Controllers
         // -- 신규 --
         private CancellationTokenSource _eventLoopCts;
 
+        [SerializeField] bool directConnectMode;
+
         public record AllocationPayload
         {
             public int lobbyId { get; set; }
@@ -55,6 +57,24 @@ namespace Game.Client.Controllers
         private async Task InitializeAsync()
         {
             Debug.Log("=== MultigameplayController Initialize Started ===");
+
+#if UNITY_EDITOR
+            if (directConnectMode)
+            {
+                Debug.Log("[MG] DirectConnectMode ON: Multiplay 할당/이벤트 구독을 스킵합니다.");
+
+                // AllocationReady 이벤트가 안 오므로 여기서 바로 플레이어를 만들어 둠
+                if (_player == null && _playerPrefab != null)
+                {
+                    _player = Instantiate(_playerPrefab);
+                    _player.onStatusChanged += OnPlayerStatusChanged;
+                    Debug.Log("[MG] Player spawned for direct connect mode.");
+                }
+
+                // 이 컨트롤러는 더 이상 할 일 없음 (Bootstrap에서 직접 IP:Port로 연결)
+                return;
+            }
+#endif
 
             _multiGameplayClient = new MultiGamePlayService.MultiGamePlayServiceClient(GrpcConnection.channel);
 #if TEST_ALPHA
@@ -266,6 +286,7 @@ namespace Game.Client.Controllers
 
         private async void OnPlayerStatusChanged(PlayerStatus before, PlayerStatus after)
         {
+            if (directConnectMode) return;  // 직결 모드 땐 서버에 상태 올리지 않음
             Debug.Log($"Player Status Changed: isReady {before.isReady}->{after.isReady}, isFinished {before.isFinished}->{after.isFinished}");
 
             // TODO :
@@ -300,6 +321,12 @@ namespace Game.Client.Controllers
 
         public async Task<(bool success, string message, string allocationId)> AllocateAsync()
         {
+
+#if UNITY_EDITOR
+            if (directConnectMode)
+                return (true, "Skipped in DirectConnectMode", null);
+#endif
+
             // [ADDED] 할당 요청 전에 TCS 준비
             if (_readyTcs == null && !IsAllocationReady())
             {
@@ -365,6 +392,14 @@ namespace Game.Client.Controllers
 
         public async Task<bool> DeallocateAsync()
         {
+#if UNITY_EDITOR
+            if (directConnectMode)
+            {
+                Debug.Log("[MG] DirectConnectMode: skip DeallocateAsync");
+                return true;
+            }
+#endif
+
             if (string.IsNullOrEmpty(currentMatchId))
             {
                 Debug.Log("DeallocateAsync: No allocation to deallocate");
@@ -487,6 +522,15 @@ namespace Game.Client.Controllers
 
         public void SubscribeToAllocationEvents()
         {
+
+#if UNITY_EDITOR
+            if (directConnectMode)
+            {
+                Debug.Log("[MG] DirectConnectMode: skip SubscribeToAllocationEvents");
+                return;
+            }
+#endif
+
             try
             {
                 _cts = new CancellationTokenSource();
@@ -541,6 +585,29 @@ namespace Game.Client.Controllers
                 case AllocationEvent.Types.EventType.AllocationReady:
                     {
                         Debug.Log($"AllocationReady - AllocationId: {e.Allocation?.AllocationId}, ServerId: {e.Allocation?.ServerId}");
+
+                        Debug.Log($"=== DETAILED AllocationReady DEBUG ===");
+                        Debug.Log($"AllocationId: {e.Allocation?.AllocationId}");
+                        Debug.Log($"ServerId: {e.Allocation?.ServerId}");
+                        Debug.Log($"IpAddress: '{e.Allocation?.IpAddress}' (Length: {e.Allocation?.IpAddress?.Length ?? -1})");
+                        Debug.Log($"GamePort: {e.Allocation?.GamePort}");
+                        Debug.Log($"Full Allocation JSON: {JsonConvert.SerializeObject(e.Allocation, Formatting.Indented)}");
+                        Debug.Log($"=== END DEBUG ===");
+
+                        // IP 주소 검증
+                        if (string.IsNullOrEmpty(e.Allocation?.IpAddress) || e.Allocation?.GamePort <= 0)
+                        {
+                            Debug.LogError($"AllocationReady but network info is invalid! IP: '{e.Allocation?.IpAddress}', Port: {e.Allocation?.GamePort}");
+
+                            // [ADDED] 대기 중이면 예외로 처리
+                            if (_isWaitingForReady)
+                            {
+                                _readyTcs?.TrySetException(new Exception($"Allocation ready but network endpoint is invalid. IP: {e.Allocation?.IpAddress}, Port: {e.Allocation?.GamePort}"));
+                            }
+                            return;
+                        }
+
+                        // 기존 코드 계속...
 
                         // [ADDED] Ready 상태 업데이트 및 대기 해제
                         currentAllocation = e.Allocation;
@@ -602,8 +669,8 @@ namespace Game.Client.Controllers
         {
             await Awaitable.MainThreadAsync();
             Debug.Log("OnAllocationReady - Creating player instance");
-            _player = Instantiate(_playerPrefab);
-            _player.onStatusChanged += OnPlayerStatusChanged;
+            //_player = Instantiate(_playerPrefab);
+            //_player.onStatusChanged += OnPlayerStatusChanged;
         }
     }
 }
