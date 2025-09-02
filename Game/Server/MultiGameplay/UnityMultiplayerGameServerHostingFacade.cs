@@ -10,6 +10,7 @@ namespace Game.Server.MultiGameplay
     {
         private static readonly HttpClient _httpClient = new HttpClient();
         private static string _accessToken;
+        private static DateTime _tokenExpiryTime = DateTime.MinValue; // 추가: 토큰 만료 시간 추적
 
         public record class TokenExchangeRequest(string[] scopes);
         public record class TokenExchangeResponse(string accessToken);
@@ -54,12 +55,13 @@ namespace Game.Server.MultiGameplay
 
         private static async Task<string> GetAccessTokenAsync()
         {
-            // 이미 토큰 있으면 요청안함
-            if (!string.IsNullOrEmpty(_accessToken))
+            // 변경: 토큰이 있고 아직 만료되지 않았으면 기존 토큰 반환
+            if (!string.IsNullOrEmpty(_accessToken) && DateTime.UtcNow < _tokenExpiryTime.AddMinutes(-5))
             {
                 return _accessToken;
             }
 
+            // 토큰이 없거나 만료되었을 때만 새로 발급
             var tokenUrl = $"https://services.api.unity.com/auth/v1/token-exchange?projectId={PROJECT_ID}";
 
             if (!string.IsNullOrEmpty(ENVIRONMENT_ID))
@@ -86,6 +88,10 @@ namespace Game.Server.MultiGameplay
             response.EnsureSuccessStatusCode();
             var tokenResponse = await response.Content.ReadFromJsonAsync<TokenExchangeResponse>();
             _accessToken = tokenResponse.accessToken;
+
+            //  추가: 토큰 만료 시간 설정 (Unity 토큰은 보통 1시간 유효)
+            _tokenExpiryTime = DateTime.UtcNow.AddHours(1);
+
             _httpClient.DefaultRequestHeaders.Authorization = null; // 토큰 얻고나면 Basic 요청 할일 없음
             return _accessToken;
         }
@@ -138,6 +144,17 @@ namespace Game.Server.MultiGameplay
             var endPoint = $"{BASE_URL}v1/allocations/projects/{PROJECT_ID}/environments/{ENVIRONMENT_ID}/fleets/{FLEET_ID}/allocations{queryString}";
             var request = await CreateAuthenticatedRequest(HttpMethod.Get, endPoint);
             var response = await _httpClient.SendAsync(request);
+
+            // 추가: 401 에러 시 토큰 무효화 후 재시도
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                _accessToken = null;
+                _tokenExpiryTime = DateTime.MinValue;
+
+                // 새 토큰으로 재시도
+                request = await CreateAuthenticatedRequest(HttpMethod.Get, endPoint);
+                response = await _httpClient.SendAsync(request);
+            }
 
             response.EnsureSuccessStatusCode();
 
