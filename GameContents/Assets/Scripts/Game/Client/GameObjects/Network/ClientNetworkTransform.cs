@@ -11,3 +11,6 @@ namespace Game.Client.GameObjects.Network
         }
     }
 }
+
+// 실시간 동기화 Network Variable
+// 이벤트성 동기화가 필요하면 RPC

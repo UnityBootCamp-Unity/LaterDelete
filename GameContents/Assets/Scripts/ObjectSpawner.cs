@@ -1,43 +1,30 @@
-// Assets/Scripts/ObjectSpawner.cs
+// Assets/Scripts/ObjectSpawnerNet.cs
+using Unity.Netcode;
 using UnityEngine;
 
-public class ObjectSpawner : MonoBehaviour
+[RequireComponent(typeof(NetworkObject))]
+public class ObjectSpawnerNet : NetworkBehaviour
 {
-    [Header("Spawn 위치")]
-    public Transform spawnPoint;            // 비워두면 이름으로 찾음
+    public Transform spawnPoint;
     public string spawnPointName = "SpawnPoint";
+    public GameObject prefabOverride; // (선택) 인스펙터로 지정
 
-    [Header("옵션")]
-    public bool parentUnderThis = true;     // 생성한 오브젝트를 이 Spawner의 자식으로 둘지
-
-    void Start()
+    public override void OnNetworkSpawn()
     {
-        if (StageInfoManager.Instance == null)
-        {
-            Debug.LogError("[ObjectSpawner] StageInfoManager가 없습니다.");
-            return;
-        }
-
-        var prefab = StageInfoManager.Instance.GetSelectedStagePrefab();
-        if (prefab == null)
-        {
-            Debug.LogError($"[ObjectSpawner] 선택된 스테이지({StageInfoManager.Instance.selectedStageId})의 프리팹이 설정되지 않았습니다.");
-            return;
-        }
-
+        if (!IsServer) return; // 서버만 스폰
         if (spawnPoint == null)
         {
             var go = GameObject.Find(spawnPointName);
-            if (go != null) spawnPoint = go.transform;
+            if (go) spawnPoint = go.transform;
         }
-
-        if (spawnPoint == null)
+        if (spawnPoint == null || prefabOverride == null)
         {
-            Debug.LogError($"[ObjectSpawner] SpawnPoint를 찾을 수 없습니다. 이름: {spawnPointName}");
+            Debug.LogError("[ObjectSpawnerNet] Missing refs");
             return;
         }
 
-        var instance = Instantiate(prefab, spawnPoint.position, spawnPoint.rotation);
-        if (parentUnderThis) instance.transform.SetParent(transform, worldPositionStays: true);
+        var go2 = Instantiate(prefabOverride, spawnPoint.position, spawnPoint.rotation);
+        var no = go2.GetComponent<NetworkObject>();
+        if (no) no.Spawn(); else Debug.LogError("Prefab needs NetworkObject!");
     }
 }

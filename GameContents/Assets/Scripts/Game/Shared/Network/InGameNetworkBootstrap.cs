@@ -70,7 +70,7 @@ namespace Game.Shared.Network
             if (isClient)
             {
                 Debug.Log($"[{nameof(InGameNetworkBootstrap)}] Role : Client");
-                SceneManager.LoadScene("Test_InGameNetwork", LoadSceneMode.Additive);
+                SceneManager.LoadScene("Stage", LoadSceneMode.Additive);
                 await StartClientAsync();
             }
 
@@ -129,7 +129,7 @@ namespace Game.Shared.Network
             Debug.Log($"Client {clientId} connected"); // 이 로그가 나오는지 확인
         }
 
-        void OnClientDisconnected(ulong clientId) 
+        void OnClientDisconnected(ulong clientId)
         {
         }
 #endif
@@ -140,7 +140,7 @@ namespace Game.Shared.Network
             {
                 /*// Nothing to do.. 
                 _transport.SetConnectionData("127.0.0.1", 7777);*/
-                 // Test Allocation 서버로 바로 붙기
+                // Test Allocation 서버로 바로 붙기
                 _transport.SetConnectionData(testIp, testPort);
                 bool ok1 = _networkManager.StartClient();
                 if (!ok1) throw new Exception("Failed to connect to server.");
@@ -207,7 +207,7 @@ namespace Game.Shared.Network
                 _transport.SetConnectionData(serverIp, serverPort);
             }
 
-            
+
             bool ok = _networkManager.StartClient();
 
             if (ok == false)

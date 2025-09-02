@@ -54,17 +54,7 @@ namespace Game.Client.GameObjects.Network
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-
-            Debug.Log($"[Player] OnNetworkSpawn. IsOwner={IsOwner}, IsServer={IsServer}, " +
-            $"OwnerClientId={OwnerClientId}");
-
-            // (권장) 내 소유 오브젝트에만 입력 활성화
-            if (!IsOwner) return;
-
-            _moveAction.action.Enable();
-            _pickUpAction.action.Enable();
-            _throwAction.action.Enable();
-
+            Debug.Log($"[Player] OnNetworkSpawn - NetworkObjectId: {NetworkObjectId}, IsOwner: {IsOwner}");
 
             _moveAction.action.performed += OnMovePerformed;
             _moveAction.action.canceled += OnMoveCanceled;
@@ -72,26 +62,18 @@ namespace Game.Client.GameObjects.Network
             _pickUpAction.action.canceled += OnPickUpCanceled;
             _throwAction.action.started += OnThrowStarted;
 
-            RegisterToInGameManagerRpc(NetworkObjectId);
+            //RegisterToInGameManagerRpc(NetworkObjectId);
         }
 
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
 
-            if (IsOwner)
-            {
-                _moveAction.action.Disable();
-                _pickUpAction.action.Disable();
-                _throwAction.action.Disable();
-
-
-                _moveAction.action.performed -= OnMovePerformed;
-                _moveAction.action.canceled -= OnMoveCanceled;
-                _pickUpAction.action.started -= OnPickUpStarted;
-                _pickUpAction.action.canceled -= OnPickUpCanceled;
-                _throwAction.action.started -= OnThrowStarted;
-            }
+            _moveAction.action.performed -= OnMovePerformed;
+            _moveAction.action.canceled -= OnMoveCanceled;
+            _pickUpAction.action.started -= OnPickUpStarted;
+            _pickUpAction.action.canceled -= OnPickUpCanceled;
+            _throwAction.action.started -= OnThrowStarted;
         }
 
         void OnMovePerformed(InputAction.CallbackContext context)
@@ -312,11 +294,11 @@ namespace Game.Client.GameObjects.Network
             _interactions &= ~(Interactions.Throw | Interactions.Hold);
         }
 
-        [Rpc(SendTo.Everyone)]
+        /*[Rpc(SendTo.Everyone)]
         void RegisterToInGameManagerRpc(ulong objectId)
         {
-            InGameManager manager =  GameObject.FindAnyObjectByType<InGameManager>();
+            InGameManager manager = GameObject.FindAnyObjectByType<InGameManager>();
             manager.RegisterPlayer(objectId);
-        }
+        }*/
     }
 }

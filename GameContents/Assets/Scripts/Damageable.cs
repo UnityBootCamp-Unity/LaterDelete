@@ -1,32 +1,50 @@
+// Assets/Scripts/Net/DamageableNet.cs
+using Unity.Netcode;
 using UnityEngine;
 
-public class Damageable : MonoBehaviour
+[RequireComponent(typeof(NetworkObject))]
+public class Damageable : NetworkBehaviour
 {
     [Header("HP")]
     public float maxHP = 50f;
-    public float currentHP;
 
-    [Header("Optional FX")]
-    public ParticleSystem breakFx;
+    // HP는 서버가 기록, 모두 읽기 가능
+    public NetworkVariable<float> currentHP = new(
+        0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    public System.Action<Damageable> OnDied; // 필요 없으면 지워도 됨
+    public System.Action<Damageable> OnDied; // 로컬 이벤트(선택)
 
-    void Awake()
+    public override void OnNetworkSpawn()
     {
-        currentHP = maxHP;
+        if (IsServer)
+            currentHP.Value = maxHP;
     }
 
-    /// <summary>충돌 등으로 들어온 피해 처리</summary>
-    public virtual void ApplyDamage(float amount, Vector3 hitPoint)
+    /// 서버만 호출하도록!
+    public virtual void ApplyDamageServer(float amount, Vector3 hitPoint)
     {
-        currentHP -= amount;
-        if (currentHP <= 0f) Die();
+        if (!IsServer) return;
+
+        currentHP.Value -= amount;
+        if (currentHP.Value <= 0f)
+            DieServer();
     }
 
-    protected virtual void Die()
+    protected virtual void DieServer()
     {
-        if (breakFx) Instantiate(breakFx, transform.position, Quaternion.identity);
+        // FX는 ClientRpc로
+        PlayBreakFxClientRpc(transform.position);
         OnDied?.Invoke(this);
-        Destroy(gameObject);
+
+        // 네트워크 전파 파괴
+        var no = GetComponent<NetworkObject>();
+        if (no && no.IsSpawned) no.Despawn(); // 모든 클라에서 사라짐
+        else Destroy(gameObject);
+    }
+
+    [ClientRpc]
+    void PlayBreakFxClientRpc(Vector3 pos)
+    {
+        // 각 클라에서 파편/이펙트 재생하고 싶다면 여기서 처리
     }
 }

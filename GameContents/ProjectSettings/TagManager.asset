@@ -8,6 +8,7 @@ TagManager:
   - OutOfBounds
   - Floor
   - Pig
+  - Bird
   layers:
   - Default
   - TransparentFX

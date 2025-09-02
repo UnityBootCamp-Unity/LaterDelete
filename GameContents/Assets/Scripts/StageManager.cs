@@ -1,9 +1,11 @@
-// Assets/Scripts/StageManager.cs
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
+using Game.Shared;
 
-public class StageManager : MonoBehaviour
+[RequireComponent(typeof(NetworkObject))]
+public class StageManager : NetworkBehaviour
 {
     [Header("UI Panels")]
     public GameObject clearPanel;
@@ -16,14 +18,17 @@ public class StageManager : MonoBehaviour
 
     [Header("Refs")]
     public BallSpawner ballSpawner; // 없으면 자동 탐색
+    [Tooltip("게임 상태 매니저 (인스펙터에서 할당 권장)")]
+    [SerializeField] private InGameManager inGameManager;
 
     [Header("Timing")]
     [Tooltip("씬 로드 직후 몇 프레임 쉬고 구독 시작 (스폰 타이밍 보호)")]
     public int warmupFrames = 2;
 
-    int targetPigCount;   // SO에서 읽은 '죽여야 하는 총 수'
-    int deadCount;        // 지금까지 죽은 수
-    bool ready;           // 판정 시작 플래그
+    // ---- 내부 상태(서버) ----
+    int targetPigCount;
+    int deadCount;
+    bool ended;
     readonly List<Damageable> subscribed = new();
 
     void Awake()
@@ -32,56 +37,82 @@ public class StageManager : MonoBehaviour
         if (failPanel) failPanel.SetActive(false);
     }
 
-    IEnumerator Start()
+    public override void OnNetworkSpawn()
     {
-        // 스포너/오브젝트 배치가 끝나도록 잠깐 대기
+        if (IsServer) StartCoroutine(ServerInitRoutine());
+    }
+
+    IEnumerator ServerInitRoutine()
+    {
+        // 0) 씬 초기 스폰/동기화 여유
         for (int i = 0; i < warmupFrames; i++) yield return null;
 
+        // 1) InGameManager.Playing까지 대기
+        //    (인스펙터 참조가 비어있을 수 있으므로 안전하게 재시도)
+        float wait = 0f;
+        while (true)
+        {
+            if (inGameManager != null &&
+                inGameManager.state.Value == InGameManager.State.Playing)
+                break;
+
+            // 인스펙터에 없고 아직 못 찾았으면 가볍게 재시도 (선택적 백업)
+#if UNITY_2023_1_OR_NEWER
+            if (inGameManager == null) inGameManager = Object.FindFirstObjectByType<InGameManager>();
+#else
+            if (inGameManager == null) inGameManager = Object.FindObjectOfType<InGameManager>();
+#endif
+            // 너무 오래 못 찾으면 경고 한 번
+            wait += Time.unscaledDeltaTime;
+            if (wait > 5f && inGameManager == null)
+            {
+                Debug.LogWarning("[StageManager] InGameManager를 찾지 못했습니다. 대기를 계속합니다.");
+                wait = 0f;
+            }
+            yield return null;
+        }
+
+        // 2) 이후는 기존 로직 그대로 --------------------
         if (!ballSpawner) ballSpawner = FindObjectOfType<BallSpawner>();
 
-        // 1) 사용할 stageId 결정
         string stageId = stageIdOverride;
         if (string.IsNullOrEmpty(stageId))
             stageId = StageInfoManager.Instance ? StageInfoManager.Instance.selectedStageId : null;
         if (string.IsNullOrEmpty(stageId))
             stageId = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
 
-        // 2) SO에서 목표 개수 읽기 (없으면 0으로)
         targetPigCount = database ? database.GetPigCount(stageId, 0) : 0;
 
-        // 3) 현재 씬의 Pig들 구독 (언제 스폰됐든 '죽을 때'만 필요)
         foreach (var d in FindObjectsOfType<Damageable>())
         {
-            // Pig만 집계하고 싶으면 태그 사용 권장
-            if (!d.CompareTag("Pig")) continue;
-            Subscribe(d);
+            if (d.CompareTag("Pig")) Subscribe(d);
         }
 
-        ready = true;
+        StartCoroutine(ServerJudgeLoop());
     }
 
-    void OnDestroy()
+    IEnumerator ServerJudgeLoop()
     {
-        foreach (var d in subscribed)
-            if (d) d.OnDied -= OnPigDied;
-        subscribed.Clear();
-    }
-
-    void Update()
-    {
-        if (!ready) return;
-
-        // 클리어: 죽은 수가 목표에 도달
-        if (deadCount >= targetPigCount)
+        while (!ended)
         {
-            ShowClear();
-            return;
-        }
+            if (deadCount >= targetPigCount)
+            {
+                ended = true;
+                ShowClearClientRpc();
+                yield break;
+            }
 
-        // 실패: 남은 공 0, 새 없음, 아직 못 죽인 피그 있음
-        if (ballSpawner && ballSpawner.RemainingBalls == 0 && Bird.AliveCount == 0 && deadCount < targetPigCount)
-        {
-            ShowFail();
+            if (ballSpawner && ballSpawner.RemainingBalls == 0 && deadCount < targetPigCount)
+            {
+                bool anyBirdAlive = FindObjectsOfType<Bird>().Length > 0; // 필요시 최적화 가능
+                if (!anyBirdAlive)
+                {
+                    ended = true;
+                    ShowFailClientRpc();
+                    yield break;
+                }
+            }
+            yield return null;
         }
     }
 
@@ -89,29 +120,26 @@ public class StageManager : MonoBehaviour
     {
         if (!d || subscribed.Contains(d)) return;
         subscribed.Add(d);
-        d.OnDied += OnPigDied;
+        d.OnDied += OnPigDiedServer;
     }
 
-    void OnPigDied(Damageable _)
+    void OnPigDiedServer(Damageable _)
     {
+        if (ended) return;
         deadCount = Mathf.Clamp(deadCount + 1, 0, int.MaxValue);
-        // 즉시 판정 갱신
-        if (ready && deadCount >= targetPigCount) ShowClear();
+        if (deadCount >= targetPigCount)
+        {
+            ended = true;
+            ShowClearClientRpc();
+        }
     }
 
-    void ShowClear()
+    public override void OnNetworkDespawn()
     {
-        if (clearPanel) clearPanel.SetActive(true);
-        if (failPanel) failPanel.SetActive(false);
-        enabled = false;
-        Debug.Log("STAGE CLEAR");
+        foreach (var d in subscribed) if (d) d.OnDied -= OnPigDiedServer;
+        subscribed.Clear();
     }
 
-    void ShowFail()
-    {
-        if (failPanel) failPanel.SetActive(true);
-        if (clearPanel) clearPanel.SetActive(false);
-        enabled = false;
-        Debug.Log("STAGE FAIL");
-    }
+    [ClientRpc] void ShowClearClientRpc() { if (clearPanel) clearPanel.SetActive(true); if (failPanel) failPanel.SetActive(false); }
+    [ClientRpc] void ShowFailClientRpc() { if (failPanel) failPanel.SetActive(true); if (clearPanel) clearPanel.SetActive(false); }
 }

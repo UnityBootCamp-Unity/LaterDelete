@@ -8,7 +8,7 @@ namespace Game.Server.MultiGameplay
 {
     class MultiGameplayServiceImpl : MultiGamePlayService.MultiGamePlayServiceBase
     {
-        public MultiGameplayServiceImpl(ILogger<MultiGameplayServiceImpl> logger, MultiGameServerManager serverManager) 
+        public MultiGameplayServiceImpl(ILogger<MultiGameplayServiceImpl> logger, MultiGameServerManager serverManager)
         {
             _logger = logger;
             _serverManager = serverManager;
@@ -40,19 +40,29 @@ namespace Game.Server.MultiGameplay
                 // TODO : 임시로 Polling get 하는중. href 로 allocation 확인하는 코드로 바꿔야함
                 UnityMultiplayerGameServerHostingFacade.ServerAllocation allocation = null;
                 int pollingCount = 0;
+                const int MAX_POLLING_ATTEMPTS = 36; // 3분 대기 (5초 * 36 = 180초)
+                const int POLLING_INTERVAL_MS = 5000; // 5초 간격
 
-                while (pollingCount < 3)
+                //while (pollingCount < 3)
+                while (pollingCount < MAX_POLLING_ATTEMPTS)
                 {
-                    await Task.Delay(5000);
+                    //await Task.Delay(5000); // 5초씩만 3번 = 15초
+                    await Task.Delay(POLLING_INTERVAL_MS);
                     try
                     {
                         allocation = await UnityMultiplayerGameServerHostingFacade.GetAllocationAsync(allocationId);
-                        
+
                         if (allocation.IsReady)
+                        {
+                            _logger.LogInformation($"Server is ready! IP: {allocation.IpAddress}:{allocation.Port}");
                             break;
+                        }
+
+                        _logger.LogInformation($"Server still booting... (attempt {pollingCount + 1}/{MAX_POLLING_ATTEMPTS})");
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        _logger.LogInformation($"Polling get allocation failed. {ex.Message}");
                         pollingCount++;
                     }
                 }
@@ -77,7 +87,7 @@ namespace Game.Server.MultiGameplay
                 while (true)
                 {
                     await Task.Delay(2000);
-                    
+
                     int subscriberCount = _serverManager.GetSubscriberCount(payload.lobbyId);
 
                     if (subscriberCount == payload.clientIds.Count)
@@ -202,7 +212,7 @@ namespace Game.Server.MultiGameplay
             {
                 var allocations = await UnityMultiplayerGameServerHostingFacade.GetAllocationsAsync
                     (
-                        request.Age, 
+                        request.Age,
                         request.Limit > 0 ? request.Limit : null,
                         request.Offset > 0 ? request.Offset : null,
                         request.AllocationIds.Count > 0 ? request.AllocationIds : null
@@ -247,7 +257,7 @@ namespace Game.Server.MultiGameplay
         {
             _logger.LogInformation($"Request update gameplay status {request.AllocationId}.");
 
-            try 
+            try
             {
                 var currentStatus = _serverManager.GetServerStatus(request.LobbyId);
 

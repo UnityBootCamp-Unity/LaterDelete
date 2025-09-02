@@ -35,9 +35,6 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/XR Templete/Stage.unity
     guid: ad6599cdb9592ed48a402d4db33912ff
-  - enabled: 1
-    path: Assets/Scenes/Test_InGameNetwork.unity
-    guid: b93135df126efe949be06f8440f8868d
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
     com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: a47c07a8a7fb7454090fcdd9b814d7f1, type: 2}
