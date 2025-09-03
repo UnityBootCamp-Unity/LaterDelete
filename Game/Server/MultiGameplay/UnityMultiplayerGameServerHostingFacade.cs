@@ -89,8 +89,8 @@ namespace Game.Server.MultiGameplay
                     Console.WriteLine("[Unity Auth] Token JSON: " + tokenResponse);
                     _accessToken = tokenResponse.accessToken;
 
-                    //  토큰 만료시간을 50분으로 설정
-                    _tokenExpiryTime = DateTime.UtcNow.AddMinutes(50);
+                    //  토큰 만료시간을 4시간으로 설정
+                    _tokenExpiryTime = DateTime.UtcNow.AddMinutes(240);
 
                     Console.WriteLine($"[Unity Auth] Token refreshed. New expiry: {_tokenExpiryTime}");
                 }
