@@ -219,38 +219,8 @@ namespace Game.Client.Views
         private async void OnCreateLobbyConfirmButtonClicked()
         {
             // _loading.Show(); 일단 중지
-            if (string.IsNullOrWhiteSpace(_createLobbyName.text) ||
-                string.IsNullOrWhiteSpace(_createLobbyMaxClient.text))
-            {
-                Debug.Log("로비 이름이나 최대 인원이 비어있습니다.");
-                _alertMessage.text = "로비 이름이나 최대 인원이 비어있습니다.";
-                _alert.Show();
-                await Task.Delay(2000);
-                _alert.Hide();
-                return;
-            }
 
-            if (!int.TryParse(_createLobbyMaxClient.text, out int maxClient) || maxClient <= 0)
-            {
-                Debug.LogWarning("최대 인원은 1 이상의 숫자여야 합니다.");
-                _alertMessage.text = "최대 인원은 1 이상의 숫자여야 합니다.";
-                _alert.Show();
-                await Task.Delay(2000);
-                _alert.Hide();
-                return;
-            }
-
-            if (maxClient > 8)
-            {
-                Debug.LogWarning("최대 인원은 8명을 초과할 수 없습니다.");
-                _alertMessage.text = "최대 인원은 8명을 초과할 수 없습니다.";
-                _alert.Show();
-                await Task.Delay(2000);
-                _alert.Hide();
-                return;
-            }
-
-            //maxClient = int.Parse(_createLobbyMaxClient.text);
+            int maxClient = int.Parse(_createLobbyMaxClient.text);
             var (success, message, userInfos) = await _controller.CreateLobbyAsync(maxClient);
 
             if (success)

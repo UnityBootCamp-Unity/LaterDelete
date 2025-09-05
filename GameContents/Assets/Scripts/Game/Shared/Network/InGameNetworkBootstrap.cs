@@ -7,9 +7,11 @@ using Unity.Services.Core;
 using System;
 using Unity.Multiplayer;
 using Game.Client.Network;
+
 #if ENABLE_UCS_SERVER
 using Unity.Services.Multiplay;
 #endif
+
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -21,10 +23,11 @@ namespace Game.Shared.Network
         [SerializeField] bool _localTest;
         [SerializeField] NetworkManager _networkManager;
         [SerializeField] UnityTransport _transport;
+
         IAllocationProvider allocationProvider;
 
-        [SerializeField] string testIp = "20.33.94.7";        // ← Test Allocation의 IP
-        [SerializeField] ushort testPort = 9100;              // ← Test Allocation의 Port
+        [SerializeField] string testIp = "20.33.94.7";  // ← Test Allocation의 IP
+        [SerializeField] ushort testPort = 9100;       // ← Test Allocation의 Port
 
         private async void Start()
         {
@@ -58,6 +61,7 @@ namespace Game.Shared.Network
 
 #if UNITY_SERVER
             Debug.Log(roleflags);
+
             if (isServer)
             {
                 Debug.Log($"[{nameof(InGameNetworkBootstrap)}] Role : Server (Dedicated server)");
@@ -70,38 +74,32 @@ namespace Game.Shared.Network
             if (isClient)
             {
                 Debug.Log($"[{nameof(InGameNetworkBootstrap)}] Role : Client");
-                SceneManager.LoadScene("Stage", LoadSceneMode.Additive);
+                SceneManager.LoadScene("Stage", LoadSceneMode.Single); // ← 여기만 변경
                 await StartClientAsync();
             }
-
 #endif
-            if ((isServer == true && isClient == true) ||
-                (isServer == false && isClient == false))
+
+            if ((isServer == true && isClient == true) || (isServer == false && isClient == false))
             {
 #if UNITY_EDITOR
                 EditorApplication.ExitPlaymode();
 #else
-            Application.Quit();
+                Application.Quit();
 #endif
                 return;
             }
         }
 
-
 #if UNITY_SERVER || ENABLE_UCS_SERVER
         async Task StartServerAsync()
         {
-            //LogServerConfig();
-
             // 서버 최적화
-            Application.targetFrameRate = 30; // FPS 제한
-            QualitySettings.vSyncCount = 0;   // VSync 비활성화
+            Application.targetFrameRate = 30;  // FPS 제한
+            QualitySettings.vSyncCount = 0;    // VSync 비활성화
 
-            _transport.SetConnectionData(allocationProvider.ipAddress,
-                                         allocationProvider.port,
-                                         allocationProvider.ipAddress);
+            _transport.SetConnectionData(allocationProvider.ipAddress, allocationProvider.port, allocationProvider.ipAddress);
+
             bool ok = _networkManager.StartServer();
-
             if (ok == false)
                 throw new Exception("Failed to start server.");
 
@@ -114,36 +112,29 @@ namespace Game.Shared.Network
             Debug.Log("Server started");
         }
 
-        //void LogServerConfig()
-        //{
-        //    var serverConfig = MultiplayService.Instance.ServerConfig;
-        //    Debug.Log($"Server ID[{serverConfig.ServerId}]");
-        //    Debug.Log($"AllocationID[{serverConfig.AllocationId}]");
-        //    Debug.Log($"Port[{serverConfig.Port}]");
-        //    Debug.Log($"QueryPort[{serverConfig.QueryPort}");
-        //    Debug.Log($"LogDirectory[{serverConfig.ServerLogDirectory}]");
-        //}
-
         void OnClientConnected(ulong clientId)
         {
-            Debug.Log($"Client {clientId} connected"); // 이 로그가 나오는지 확인
+            Debug.Log($"Client {clientId} connected");
+            // 이 로그가 나오는지 확인
         }
 
         void OnClientDisconnected(ulong clientId)
         {
         }
 #endif
+
 #if UNITY_CLIENT
         async Task StartClientAsync()
         {
             if (_localTest)
             {
-                /*// Nothing to do.. 
-                _transport.SetConnectionData("127.0.0.1", 7777);*/
                 // Test Allocation 서버로 바로 붙기
                 _transport.SetConnectionData(testIp, testPort);
+
                 bool ok1 = _networkManager.StartClient();
-                if (!ok1) throw new Exception("Failed to connect to server.");
+                if (!ok1)
+                    throw new Exception("Failed to connect to server.");
+
                 Debug.Log("Client started (direct connect).");
                 return; // ← 아래 Allocation 로직 진입 X
             }
@@ -181,13 +172,12 @@ namespace Game.Shared.Network
                     await Task.Delay(3000);
 
                     bool Tok = _networkManager.StartClient();
-
                     if (!Tok)
                     {
                         Debug.LogError("NetworkManager.StartClient() returned false");
                         return;
                     }
-                    else //아래 클라이언트가 2번 시작되는 문제 방지
+                    else // 아래 클라이언트가 2번 시작되는 문제 방지
                     {
                         Debug.Log("Client started");
                         return;
@@ -207,9 +197,7 @@ namespace Game.Shared.Network
                 _transport.SetConnectionData(serverIp, serverPort);
             }
 
-
             bool ok = _networkManager.StartClient();
-
             if (ok == false)
                 throw new Exception("Failed to connect to server.");
 

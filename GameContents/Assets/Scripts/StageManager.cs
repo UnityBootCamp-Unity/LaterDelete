@@ -1,8 +1,8 @@
+// Assets/Scripts/StageManager.cs
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
-using Game.Shared;
 
 [RequireComponent(typeof(NetworkObject))]
 public class StageManager : NetworkBehaviour
@@ -13,19 +13,20 @@ public class StageManager : NetworkBehaviour
 
     [Header("Data")]
     public StageDatabase database;
-    [Tooltip("선택된 스테이지 ID가 비면 StageInfoManager 또는 씬 이름 사용")]
     public string stageIdOverride;
 
     [Header("Refs")]
-    public BallSpawner ballSpawner; // 없으면 자동 탐색
-    [Tooltip("게임 상태 매니저 (인스펙터에서 할당 권장)")]
-    [SerializeField] private InGameManager inGameManager;
+    public BallSpawner ballSpawner;
+
+    [Header("Stage Spawn")]
+    public Transform stageSpawnPoint;
+    public string stageSpawnPointName = "ObjectSpawnPoint";
+    public GameObject fallbackStagePrefab;
 
     [Header("Timing")]
-    [Tooltip("씬 로드 직후 몇 프레임 쉬고 구독 시작 (스폰 타이밍 보호)")]
     public int warmupFrames = 2;
 
-    // ---- 내부 상태(서버) ----
+    // 내부 상태
     int targetPigCount;
     int deadCount;
     bool ended;
@@ -44,51 +45,50 @@ public class StageManager : NetworkBehaviour
 
     IEnumerator ServerInitRoutine()
     {
-        // 0) 씬 초기 스폰/동기화 여유
         for (int i = 0; i < warmupFrames; i++) yield return null;
 
-        // 1) InGameManager.Playing까지 대기
-        //    (인스펙터 참조가 비어있을 수 있으므로 안전하게 재시도)
-        float wait = 0f;
-        while (true)
-        {
-            if (inGameManager != null &&
-                inGameManager.state.Value == InGameManager.State.Playing)
-                break;
+        // 1) 스테이지 ID 결정
+        string stageId =
+            !string.IsNullOrEmpty(stageIdOverride) ? stageIdOverride :
+            StageInfoManager.Instance ? StageInfoManager.Instance.selectedStageId :
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
 
-            // 인스펙터에 없고 아직 못 찾았으면 가볍게 재시도 (선택적 백업)
-#if UNITY_2023_1_OR_NEWER
-            if (inGameManager == null) inGameManager = Object.FindFirstObjectByType<InGameManager>();
-#else
-            if (inGameManager == null) inGameManager = Object.FindObjectOfType<InGameManager>();
-#endif
-            // 너무 오래 못 찾으면 경고 한 번
-            wait += Time.unscaledDeltaTime;
-            if (wait > 5f && inGameManager == null)
-            {
-                Debug.LogWarning("[StageManager] InGameManager를 찾지 못했습니다. 대기를 계속합니다.");
-                wait = 0f;
-            }
-            yield return null;
-        }
+        // 2) 스테이지 프리팹 스폰
+        SpawnStagePrefabServer();
 
-        // 2) 이후는 기존 로직 그대로 --------------------
-        if (!ballSpawner) ballSpawner = FindObjectOfType<BallSpawner>();
-
-        string stageId = stageIdOverride;
-        if (string.IsNullOrEmpty(stageId))
-            stageId = StageInfoManager.Instance ? StageInfoManager.Instance.selectedStageId : null;
-        if (string.IsNullOrEmpty(stageId))
-            stageId = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-
+        // 3) DB에서 목표 Pig 개수
         targetPigCount = database ? database.GetPigCount(stageId, 0) : 0;
 
+        // 4) 현재 씬의 Pig 구독
         foreach (var d in FindObjectsOfType<Damageable>())
-        {
             if (d.CompareTag("Pig")) Subscribe(d);
-        }
 
+        // 5) BallSpawner 참조 보정
+        if (!ballSpawner) ballSpawner = FindObjectOfType<BallSpawner>();
+
+        // 6) 판정 루프 시작
         StartCoroutine(ServerJudgeLoop());
+    }
+
+    void SpawnStagePrefabServer()
+    {
+        if (!IsServer) return;
+
+        if (!stageSpawnPoint)
+        {
+            var go = GameObject.Find(stageSpawnPointName);
+            if (go) stageSpawnPoint = go.transform;
+        }
+        if (!stageSpawnPoint) { Debug.LogWarning("[StageManager] Stage spawn point 없음"); return; }
+
+        GameObject prefab =
+            StageInfoManager.Instance ? StageInfoManager.Instance.GetSelectedStagePrefab() : null;
+        if (!prefab) prefab = fallbackStagePrefab;
+        if (!prefab) { Debug.LogWarning("[StageManager] prefab 없음"); return; }
+
+        var inst = Instantiate(prefab, stageSpawnPoint.position, stageSpawnPoint.rotation);
+        var no = inst.GetComponent<NetworkObject>();
+        if (no) no.Spawn(); else Debug.LogError("[StageManager] prefab에 NetworkObject 없음");
     }
 
     IEnumerator ServerJudgeLoop()
@@ -97,19 +97,15 @@ public class StageManager : NetworkBehaviour
         {
             if (deadCount >= targetPigCount)
             {
-                ended = true;
-                ShowClearClientRpc();
-                yield break;
+                ended = true; ShowClearClientRpc(); yield break;
             }
 
             if (ballSpawner && ballSpawner.RemainingBalls == 0 && deadCount < targetPigCount)
             {
-                bool anyBirdAlive = FindObjectsOfType<Bird>().Length > 0; // 필요시 최적화 가능
+                bool anyBirdAlive = FindObjectsOfType<Bird>().Length > 0;
                 if (!anyBirdAlive)
                 {
-                    ended = true;
-                    ShowFailClientRpc();
-                    yield break;
+                    ended = true; ShowFailClientRpc(); yield break;
                 }
             }
             yield return null;
@@ -126,7 +122,7 @@ public class StageManager : NetworkBehaviour
     void OnPigDiedServer(Damageable _)
     {
         if (ended) return;
-        deadCount = Mathf.Clamp(deadCount + 1, 0, int.MaxValue);
+        deadCount++;
         if (deadCount >= targetPigCount)
         {
             ended = true;
