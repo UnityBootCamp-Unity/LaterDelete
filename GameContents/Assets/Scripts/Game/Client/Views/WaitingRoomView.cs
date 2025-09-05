@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,6 +7,8 @@ using System.Threading.Tasks;
 using Game.Client.Controllers;
 using Game.Client.Network;
 using Game.Lobbies;
+using Unity.Netcode.Transports.UTP;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem.XR;
 using UnityEngine.SceneManagement;
@@ -42,6 +45,12 @@ namespace Game.Client.Views
         [SerializeField] Canvas _gameStarting;
 
         bool isQuit = false;
+
+        //  추가: 선택된 스테이지 씬 이름 (UI로 바인딩하면 바꿔줘도 됨)
+        [SerializeField] string stageSceneName = "Stage";
+
+        //  추가: 중복 코루틴 방지
+        bool _connectRoutineStarted = false;
 
         private void Awake()
         {
@@ -187,6 +196,9 @@ namespace Game.Client.Views
                 MultiplayMatchBlackboard.lobbyUsers = new Dictionary<int, string>(_lobbiesController.CurrentLobbyUsers);
 
                 // Nothing to do... 서버 할당되어서 이벤트 처리될때까지 그냥 기다림.
+
+                // 추가: 서버 접속 및 시작 신호 루틴 시작
+                if (!_connectRoutineStarted) { _connectRoutineStarted = true; StartCoroutine(ConnectAndStartIfNeeded()); }
             }
             else
             {
@@ -348,6 +360,9 @@ namespace Game.Client.Views
             {
                 _gameStarting.Show();
                 GameManager.instance.ChangeState(State.StartupGamePlay);
+
+                // 추가: 모든 참가자가 서버에 붙도록 (방장/비방장 공통)
+                if (!_connectRoutineStarted) { _connectRoutineStarted = true; StartCoroutine(ConnectAndStartIfNeeded()); }
             }
 
             _lobbyState = lobbyState;
@@ -438,5 +453,55 @@ namespace Game.Client.Views
             RefreshUserInLobbyContent(list);   // 한 번에!
             RefreshInLobbyUIs();
         }
+
+        // 추가: UGSH 할당 → 서버 접속 → (방장만) 서버에 Stage 시작 요청
+        private IEnumerator ConnectAndStartIfNeeded()
+        {
+            // 1) UGSH 할당 정보 대기 (너희 프로젝트의 블랙보드에 이미 들어옴)
+            while (MultiplayMatchBlackboard.allocation == null)
+                yield return null;
+
+            var alloc = MultiplayMatchBlackboard.allocation;
+            var nm = NetworkManager.Singleton;
+            var utp = nm.GetComponent<UnityTransport>();
+
+            // 2) 서버에 접속 (모든 플레이어)
+            utp.SetConnectionData(alloc.IpAddress, (ushort)alloc.GamePort);
+            if (!nm.IsClient && !nm.IsServer)
+                nm.StartClient();
+
+            // 3) 접속 완료 대기 (자기 자신이 붙을 때까지)
+            bool connected = false;
+            System.Action<ulong> onConnected = null;
+            onConnected = (id) =>
+            {
+                if (id == nm.LocalClientId) connected = true;
+            };
+            nm.OnClientConnectedCallback += onConnected;
+
+            float t = 0f;
+            while (!connected && (t += Time.deltaTime) < 15f)
+                yield return null;
+
+            nm.OnClientConnectedCallback -= onConnected;
+
+            if (!connected)
+            {
+                Debug.LogError("ConnectAndStartIfNeeded: 서버 접속 타임아웃");
+                yield break;
+            }
+
+            // 4) (방장만) 서버에 Stage 씬 시작 요청
+            if (MultiplayMatchBlackboard.isMaster)
+            {
+                // 서버 쪽 InGame 씬에 있는 MatchCoordinator가 올라올 때까지 대기
+                while (MatchCoordinator.Instance == null)
+                    yield return null;
+
+                // ★ 여기서 네가 말한 두 줄이 정확히 들어간다
+                MatchCoordinator.Instance.RequestStartStageServerRpc(stageSceneName);
+            }
+        }
     }
+
 }
