@@ -54,7 +54,6 @@ namespace Game.Client.GameObjects.Network
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            Debug.Log($"[Player] OnNetworkSpawn - NetworkObjectId: {NetworkObjectId}, IsOwner: {IsOwner}");
 
             _moveAction.action.performed += OnMovePerformed;
             _moveAction.action.canceled += OnMoveCanceled;
@@ -62,7 +61,7 @@ namespace Game.Client.GameObjects.Network
             _pickUpAction.action.canceled += OnPickUpCanceled;
             _throwAction.action.started += OnThrowStarted;
 
-            //RegisterToInGameManagerRpc(NetworkObjectId);
+            RegisterToInGameManagerRpc(NetworkObjectId);
         }
 
         public override void OnNetworkDespawn()
@@ -294,11 +293,11 @@ namespace Game.Client.GameObjects.Network
             _interactions &= ~(Interactions.Throw | Interactions.Hold);
         }
 
-        /*[Rpc(SendTo.Everyone)]
+        [Rpc(SendTo.Everyone)]
         void RegisterToInGameManagerRpc(ulong objectId)
         {
-            InGameManager manager = GameObject.FindAnyObjectByType<InGameManager>();
-            manager.RegisterPlayer(objectId);
-        }*/
+            InGameManager manager =  GameObject.FindAnyObjectByType<InGameManager>();
+            //manager.RegisterPlayer(objectId);
+        }
     }
 }

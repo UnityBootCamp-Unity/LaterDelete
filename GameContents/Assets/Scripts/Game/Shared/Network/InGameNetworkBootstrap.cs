@@ -74,7 +74,7 @@ namespace Game.Shared.Network
             if (isClient)
             {
                 Debug.Log($"[{nameof(InGameNetworkBootstrap)}] Role : Client");
-                SceneManager.LoadScene("Stage", LoadSceneMode.Single); // ← 여기만 변경
+                SceneManager.LoadScene("Stage", LoadSceneMode.Additive); // ← 여기만 변경
                 await StartClientAsync();
             }
 #endif
