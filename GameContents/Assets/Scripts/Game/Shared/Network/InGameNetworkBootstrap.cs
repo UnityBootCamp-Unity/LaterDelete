@@ -65,7 +65,7 @@ namespace Game.Shared.Network
             if (isServer)
             {
                 Debug.Log($"[{nameof(InGameNetworkBootstrap)}] Role : Server (Dedicated server)");
-                SceneManager.LoadScene("Server", LoadSceneMode.Additive);
+                SceneManager.LoadScene("Stage", LoadSceneMode.Additive);
                 await StartServerAsync();
             }
 #endif
@@ -74,7 +74,7 @@ namespace Game.Shared.Network
             if (isClient)
             {
                 Debug.Log($"[{nameof(InGameNetworkBootstrap)}] Role : Client");
-                SceneManager.LoadScene("Stage", LoadSceneMode.Additive); // ← 여기만 변경
+                //SceneManager.LoadScene("Stage", LoadSceneMode.Additive); // ← 여기만 변경
                 await StartClientAsync();
             }
 #endif
