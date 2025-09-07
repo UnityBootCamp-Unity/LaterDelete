@@ -2335,6 +2335,7 @@ GameObject:
   - component: {fileID: 1649175443}
   - component: {fileID: 1649175446}
   - component: {fileID: 1649175447}
+  - component: {fileID: 1649175448}
   m_Layer: 0
   m_Name: StageManager
   m_TagString: Untagged
@@ -2434,6 +2435,22 @@ MonoBehaviour:
   queueAlongRight: 0
   spacing: 0.35
   inGameManager: {fileID: 0}
+--- !u!114 &1649175448
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1649175442}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d27231b55d50c87468933c91901ac4a9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::StageNetworkSpawner
+  stagePrefabRef: {fileID: 0}
+  stageResourcePath: Stages/Stage01Object
+  StageNetId:
+    m_InternalValue: 0
 --- !u!1 &1674641045
 GameObject:
   m_ObjectHideFlags: 0
