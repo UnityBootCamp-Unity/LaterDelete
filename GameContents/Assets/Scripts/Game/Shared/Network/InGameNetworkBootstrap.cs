@@ -26,47 +26,80 @@ namespace Game.Shared.Network
 
         IAllocationProvider allocationProvider;
 
-        [SerializeField] string testIp = "20.33.94.7";  // ← Test Allocation의 IP
-        [SerializeField] ushort testPort = 9100;       // ← Test Allocation의 Port
+        [SerializeField] string testIp = "20.33.94.7";
+        [SerializeField] ushort testPort = 9100;
+
+        const string StageSceneName = "Stage";
+
+        // ★ 추가: 에디터에서 자동 바인딩 보조
+        void OnValidate()
+        {
+            if (_networkManager == null) _networkManager = FindObjectOfType<NetworkManager>(true);
+            if (_transport == null && _networkManager != null) _transport = _networkManager.GetComponent<UnityTransport>();
+        }
+
+        // ★ 추가: EnsureSingleNM가 중복 NM을 제거한 뒤 살아있는 싱글턴으로 참조 재설정
+        void RebindNetworkRefs()
+        {
+            var nm = NetworkManager.Singleton ?? _networkManager;
+            if (nm != null)
+            {
+                _networkManager = nm;
+                if (_transport == null) _transport = nm.GetComponent<UnityTransport>();
+                // 인게임에만 NM이 있으므로 유지하도록 DDOL
+                if (_networkManager != null) DontDestroyOnLoad(_networkManager.gameObject);
+            }
+        }
+
+        // ★ 추가: 서버가 진짜 Listening 상태인지 잠깐 확인(Spawn/Scene sync 타이밍 안정화)
+        static async Task WaitForServerListeningAsync(int timeoutMs = 4000)
+        {
+            float end = Time.realtimeSinceStartup + timeoutMs / 1000f;
+            while (Time.realtimeSinceStartup < end)
+            {
+                var nm = NetworkManager.Singleton;
+                if (nm != null && nm.IsServer && nm.IsListening) return;
+                await Task.Delay(50);
+            }
+            Debug.LogWarning("[Bootstrap] Server didn't become Listening within timeout; continuing.");
+        }
 
         private async void Start()
         {
+            RebindNetworkRefs();                 // ★ 추가
             await InitializeAsync();
         }
 
         async Task InitializeAsync()
         {
-            if (_localTest == false)
+            RebindNetworkRefs();                 // ★ 추가
+
+            if (!_localTest)
             {
-                try
-                {
-                    await UnityServices.InitializeAsync();
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogException(ex);
-                    return;
-                }
+                try { await UnityServices.InitializeAsync(); }
+                catch (Exception ex) { Debug.LogException(ex); return; }
             }
 
-            if (_localTest)
-                allocationProvider = new MockAllocationProvider();
-            else
-                allocationProvider = new MultiplayAllocationProvider();
+            allocationProvider = _localTest ? new MockAllocationProvider()
+                                            : new MultiplayAllocationProvider();
 
-            MultiplayerRoleFlags roleflags = MultiplayerRolesManager.ActiveMultiplayerRoleMask;
-
-            bool isServer = roleflags.HasFlag(MultiplayerRoleFlags.Server);
-            bool isClient = roleflags.HasFlag(MultiplayerRoleFlags.Client);
+            MultiplayerRoleFlags mask = MultiplayerRolesManager.ActiveMultiplayerRoleMask;
+            bool isServer = mask.HasFlag(MultiplayerRoleFlags.Server);
+            bool isClient = mask.HasFlag(MultiplayerRoleFlags.Client);
 
 #if UNITY_SERVER
-            Debug.Log(roleflags);
+            Debug.Log(mask);
 
             if (isServer)
             {
                 Debug.Log($"[{nameof(InGameNetworkBootstrap)}] Role : Server (Dedicated server)");
-                SceneManager.LoadScene("Stage", LoadSceneMode.Additive);
-                await StartServerAsync();
+
+                await StartServerAsync();        // ★ 서버 먼저
+                await WaitForServerListeningAsync(); // ★ 추가: 진짜 리스닝 대기
+
+                HookSceneDebug();
+                // ★ 서버가 Netcode SceneManager로 Additive 로드(클라와 동기화)
+                _networkManager.SceneManager.LoadScene(StageSceneName, LoadSceneMode.Additive);
             }
 #endif
 
@@ -74,135 +107,175 @@ namespace Game.Shared.Network
             if (isClient)
             {
                 Debug.Log($"[{nameof(InGameNetworkBootstrap)}] Role : Client");
-                //SceneManager.LoadScene("Stage", LoadSceneMode.Additive); // ← 여기만 변경
-                await StartClientAsync();
+                HookSceneDebug();
+                await StartClientAsync();        // ★ 클라는 씬 직접 로드 안 함
             }
 #endif
 
-            if ((isServer == true && isClient == true) || (isServer == false && isClient == false))
+            if ((isServer && isClient) || (!isServer && !isClient))
             {
 #if UNITY_EDITOR
                 EditorApplication.ExitPlaymode();
 #else
                 Application.Quit();
 #endif
-                return;
             }
         }
 
 #if UNITY_SERVER || ENABLE_UCS_SERVER
         async Task StartServerAsync()
         {
-            // 서버 최적화
-            Application.targetFrameRate = 30;  // FPS 제한
-            QualitySettings.vSyncCount = 0;    // VSync 비활성화
+            RebindNetworkRefs(); // ★ 추가: 혹시 모를 참조 깨짐 방지
+            if (_networkManager == null || _transport == null)
+            {
+                Debug.LogError("[Bootstrap] NetworkManager/UnityTransport reference is null.");
+                return;
+            }
+
+            Application.targetFrameRate = 30;
+            QualitySettings.vSyncCount = 0;
 
             _transport.SetConnectionData(allocationProvider.ipAddress, allocationProvider.port, allocationProvider.ipAddress);
 
-            bool ok = _networkManager.StartServer();
-            if (ok == false)
+            Debug.Log($"[Bootstrap] Before StartServer - IsListening={_networkManager.IsListening}");
+
+            if (!_networkManager.StartServer())
                 throw new Exception("Failed to start server.");
 
             _networkManager.OnClientConnectedCallback += OnClientConnected;
             _networkManager.OnClientDisconnectCallback += OnClientDisconnected;
 
-            if (_localTest == false)
-                await MultiplayService.Instance.ReadyServerForPlayersAsync();
+            if (!_localTest)
+            {
+                var ready = await WaitForAllocationReadyAsync(15000);
+                if (ready)
+                {
+                    try
+                    {
+                        await Unity.Services.Multiplay.MultiplayService.Instance.ReadyServerForPlayersAsync();
+                        Debug.Log("[Bootstrap] ReadyServerForPlayersAsync OK (allocation present)");
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning("[Bootstrap] ReadyServerForPlayersAsync skipped: " + ex.GetType().Name);
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning("[Bootstrap] No allocation yet → skip ReadyServerForPlayersAsync");
+                }
+            }
+        }
 
-            Debug.Log("Server started");
+        static async Task<bool> WaitForAllocationReadyAsync(int timeoutMs)
+        {
+            var deadline = Time.realtimeSinceStartup + (timeoutMs / 1000f);
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                try
+                {
+                    var cfg = Unity.Services.Multiplay.MultiplayService.Instance.ServerConfig;
+                    if (!string.IsNullOrEmpty(cfg.AllocationId))
+                        return true;
+                }
+                catch { }
+                await System.Threading.Tasks.Task.Delay(500);
+            }
+            return false;
         }
 
         void OnClientConnected(ulong clientId)
         {
-            Debug.Log($"Client {clientId} connected");
-            // 이 로그가 나오는지 확인
+            Debug.Log($"[Bootstrap] Client {clientId} connected");
         }
 
         void OnClientDisconnected(ulong clientId)
         {
+            Debug.Log($"[Bootstrap] Client {clientId} disconnected");
         }
 #endif
 
 #if UNITY_CLIENT
         async Task StartClientAsync()
         {
+            RebindNetworkRefs(); // ★ 추가
+
             if (_localTest)
             {
-                // Test Allocation 서버로 바로 붙기
                 _transport.SetConnectionData(testIp, testPort);
-
-                bool ok1 = _networkManager.StartClient();
-                if (!ok1)
+                if (!_networkManager.StartClient())
                     throw new Exception("Failed to connect to server.");
 
-                Debug.Log("Client started (direct connect).");
-                return; // ← 아래 Allocation 로직 진입 X
+                Debug.Log("[Bootstrap] Client started (direct connect)");
+                return;
             }
-            else
+
+            const int timeoutMs = 30000;
+            int waited = 0;
+            while (waited < timeoutMs)
             {
-                float timeout = 30000f;
-                float elapsedTime = 0f;
-                bool allocationReady = false;
+                await Task.Delay(1000);
+                waited += 1000;
 
-                while (elapsedTime < timeout)
-                {
-                    await Task.Delay(1000);
-
-                    if (MultiplayMatchBlackboard.allocation != null &&
-                        MultiplayMatchBlackboard.allocation.IsReady)
-                    {
-                        allocationReady = true;
-                        break;
-                    }
-                }
-
-                if (allocationReady)
-                {
-                    string TserverIp = MultiplayMatchBlackboard.allocation.IpAddress;
-                    ushort TserverPort = (ushort)MultiplayMatchBlackboard.allocation.GamePort;
-
-                    Debug.Log($"=== Connection Attempt ===");
-                    Debug.Log($"Server IP: {TserverIp}");
-                    Debug.Log($"Server Port: {TserverPort}");
-                    Debug.Log($"Allocation ID: {MultiplayMatchBlackboard.allocation.AllocationId}");
-
-                    _transport.SetConnectionData(TserverIp, TserverPort);
-
-                    // 연결 시도 전 잠깐 대기
-                    await Task.Delay(3000);
-
-                    bool Tok = _networkManager.StartClient();
-                    if (!Tok)
-                    {
-                        Debug.LogError("NetworkManager.StartClient() returned false");
-                        return;
-                    }
-                    else // 아래 클라이언트가 2번 시작되는 문제 방지
-                    {
-                        Debug.Log("Client started");
-                        return;
-                    }
-                }
-
-                if (allocationReady == false)
-                {
-                    Debug.LogError("Timeout waiting for allocation ready");
-                    return;
-                }
-
-                string serverIp = MultiplayMatchBlackboard.allocation.IpAddress;
-                ushort serverPort = (ushort)MultiplayMatchBlackboard.allocation.GamePort;
-
-                Debug.Log($"Connecting to allocated server at {serverIp} : {serverPort}");
-                _transport.SetConnectionData(serverIp, serverPort);
+                if (MultiplayMatchBlackboard.allocation != null &&
+                    MultiplayMatchBlackboard.allocation.IsReady)
+                    break;
             }
 
-            bool ok = _networkManager.StartClient();
-            if (ok == false)
-                throw new Exception("Failed to connect to server.");
+            if (MultiplayMatchBlackboard.allocation == null ||
+                !MultiplayMatchBlackboard.allocation.IsReady)
+            {
+                Debug.LogError("[Bootstrap] Timeout waiting for allocation ready");
+                return;
+            }
 
-            Debug.Log("Client started");
+            string ip = MultiplayMatchBlackboard.allocation.IpAddress;
+            ushort port = (ushort)MultiplayMatchBlackboard.allocation.GamePort;
+
+            Debug.Log("=== Connection Attempt ===");
+            Debug.Log($"Server IP: {ip}");
+            Debug.Log($"Server Port: {port}");
+            Debug.Log($"Allocation ID: {MultiplayMatchBlackboard.allocation.AllocationId}");
+
+            _transport.SetConnectionData(ip, port);
+
+            await Task.Delay(1000);
+
+            if (!_networkManager.StartClient())
+            {
+                Debug.LogError("NetworkManager.StartClient() returned false");
+                return;
+            }
+
+            Debug.Log("[Bootstrap] Client started");
         }
 #endif
+
+        // ── 디버깅 ─────────────────────────────
+        void HookSceneDebug()
+        {
+            if (_networkManager == null || _networkManager.SceneManager == null) return;
+            var nsm = _networkManager.SceneManager;
+
+            nsm.OnSceneEvent += (e) =>
+            {
+                Debug.Log($"[Bootstrap] SceneEvent={e.SceneEventType}, Name={e.SceneName}, IsServer={_networkManager.IsServer}, IsListening={_networkManager.IsListening}");
+            };
+
+            nsm.OnLoadEventCompleted += (sceneName, mode, clientsCompleted, clientsTimedOut) =>
+            {
+                Debug.Log($"[Bootstrap] LoadCompleted: {sceneName}, ok={clientsCompleted.Count}, timeout={clientsTimedOut.Count}");
+            };
+        }
+
+        // ★ 추가: 정리
+        void OnDestroy()
+        {
+            if (_networkManager != null)
+            {
+                _networkManager.OnClientConnectedCallback -= OnClientConnected;
+                _networkManager.OnClientDisconnectCallback -= OnClientDisconnected;
+            }
+        }
     }
 }
