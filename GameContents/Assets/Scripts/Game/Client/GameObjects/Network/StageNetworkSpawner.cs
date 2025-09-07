@@ -18,7 +18,7 @@ public class StageNetworkSpawner : NetworkBehaviour
     void Log(string m) { if (VERBOSE) Debug.Log($"[StageSpawner] {m} | local[{Info(base.NetworkManager)}] singleton[{Info(NetworkManager.Singleton)}]"); }
     void Err(string m) => Debug.LogError($"[StageSpawner] {m}");
 
-    NetworkManager LocalNM => base.NetworkManager != null ? base.NetworkManager : NetworkManager.Singleton;
+    NetworkManager LocalNM => base.NetworkManager;
 
     void Awake()
     {
