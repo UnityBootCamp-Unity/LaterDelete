@@ -47,7 +47,7 @@ namespace Game.Shared.Network
                 _networkManager = nm;
                 if (_transport == null) _transport = nm.GetComponent<UnityTransport>();
                 // 인게임에만 NM이 있으므로 유지하도록 DDOL
-                if (_networkManager != null) DontDestroyOnLoad(_networkManager.gameObject);
+                //if (_networkManager != null) DontDestroyOnLoad(_networkManager.gameObject);
             }
         }
 
